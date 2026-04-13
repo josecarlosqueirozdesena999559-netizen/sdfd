@@ -8,7 +8,7 @@ workflows:
       xcode: latest
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: br.com.prefeitura.requisiplus
+        bundle_identifier: com.josecarlos.requisiplus
       vars:
         XCODE_PROJECT: "RequisiPlusApp.xcodeproj"
         XCODE_SCHEME: "RequisiPlusApp"
