@@ -1,0 +1,36 @@
+workflows:
+  ios-release:
+    name: iOS Release
+    max_build_duration: 60
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: br.com.prefeitura.requisiplus
+      vars:
+        XCODE_PROJECT: "RequisiPlusApp.xcodeproj"
+        XCODE_SCHEME: "RequisiPlusApp"
+        APP_STORE_APPLE_ID: ""
+    scripts:
+      - name: Apply signing profiles
+        script: |
+          xcode-project use-profiles
+      - name: Set build number
+        script: |
+          cd "$CM_BUILD_DIR"
+          agvtool new-version -all "$BUILD_NUMBER"
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
