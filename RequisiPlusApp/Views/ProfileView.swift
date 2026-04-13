@@ -1,10 +1,13 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @EnvironmentObject private var authViewModel: AuthViewModel
+    @EnvironmentObject private var appDataViewModel: AppDataViewModel
+
     var body: some View {
         ScreenContainer(
             title: "Perfil",
-            subtitle: "Dados do usuario responsavel e preferencias rapidas do painel."
+            subtitle: "Dados do usuario autenticado e acesso controlado pelo Supabase."
         ) {
             HStack(alignment: .top, spacing: 18) {
                 VStack(alignment: .leading, spacing: 16) {
@@ -19,19 +22,32 @@ struct ProfileView: View {
                             )
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Jose Carlos")
+                            Text(appDataViewModel.profile?.name ?? authViewModel.displayName)
                                 .font(.system(size: 26, weight: .bold))
                                 .foregroundStyle(AppTheme.deepBlue)
 
-                            Text("Administrador do Almoxarifado")
+                            Text(appDataViewModel.profile?.funcao ?? "Sessao autenticada pelo Supabase")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(.secondary)
                         }
                     }
 
-                    userDataRow(title: "E-mail", value: "jose.carlos@prefeitura.gov")
-                    userDataRow(title: "Unidade", value: "Almoxarifado Central")
-                    userDataRow(title: "Ultimo acesso", value: "13/04/2026 as 16:17")
+                    userDataRow(title: "E-mail", value: appDataViewModel.profile?.email ?? authViewModel.email)
+                    userDataRow(title: "Unidade", value: appDataViewModel.profile?.setor ?? "Setor nao informado")
+                    userDataRow(title: "Perfil", value: appDataViewModel.profile?.role ?? "usuario")
+                    userDataRow(title: "Ultimo acesso", value: authViewModel.lastAccessDescription)
+
+                    Button {
+                        authViewModel.signOut()
+                    } label: {
+                        Text("Sair")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(AppTheme.deepBlue, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(22)

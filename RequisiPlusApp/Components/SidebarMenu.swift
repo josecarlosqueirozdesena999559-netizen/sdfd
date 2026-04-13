@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SidebarMenu: View {
+    @EnvironmentObject private var appDataViewModel: AppDataViewModel
     @Binding var selectedSection: AppSection
     var showsCloseButton = false
     var onClose: (() -> Void)?
@@ -9,11 +10,11 @@ struct SidebarMenu: View {
         VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Almoxarifado")
+                    Text("requisi+")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(.white)
 
-                    Text("Gestao de estoque e atendimento")
+                    Text("Gestao de requisicoes e atendimento")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(Color.white.opacity(0.78))
                 }
@@ -80,8 +81,8 @@ struct SidebarMenu: View {
                     .foregroundStyle(Color.white.opacity(0.85))
 
                 HStack {
-                    StatusPill(title: "8 pendentes", tint: .white.opacity(0.20))
-                    StatusPill(title: "21 finalizadas", tint: .white.opacity(0.12))
+                    StatusPill(title: "\(appDataViewModel.summary.pendingCount) pendentes", tint: .white.opacity(0.20))
+                    StatusPill(title: "\(appDataViewModel.summary.desktopSignatureCount) no computador", tint: .white.opacity(0.12))
                 }
             }
         }

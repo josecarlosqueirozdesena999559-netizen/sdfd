@@ -1,4 +1,4 @@
-# AlmoxarifadoApp
+# RequisiPlusApp
 
 Aplicativo iOS nativo em SwiftUI com visual azul e branco, menu glass e as areas:
 
@@ -9,12 +9,12 @@ Aplicativo iOS nativo em SwiftUI com visual azul e branco, menu glass e as areas
 
 ## Estrutura
 
-- `AlmoxarifadoApp/`: codigo-fonte SwiftUI
-- `AlmoxarifadoApp.xcodeproj/`: projeto para abrir no Xcode
+- `RequisiPlusApp/`: codigo-fonte SwiftUI
+- `RequisiPlusApp.xcodeproj/`: projeto para abrir no Xcode
 
 ## Como abrir
 
-1. Abra `AlmoxarifadoApp.xcodeproj` no Xcode.
+1. Abra `RequisiPlusApp.xcodeproj` no Xcode.
 2. Configure assinatura em `Signing & Capabilities`.
 3. Rode no simulador ou dispositivo.
 

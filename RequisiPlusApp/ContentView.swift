@@ -2,8 +2,8 @@ import SwiftUI
 
 enum AppSection: String, CaseIterable, Identifiable {
     case inicio = "Início"
-    case requisicoes = "Requisições"
-    case feitos = "Feitos"
+    case fazerRequisicao = "Fazer requisição"
+    case verRequisicoes = "Ver requisições"
     case perfil = "Perfil"
 
     var id: String { rawValue }
@@ -11,17 +11,38 @@ enum AppSection: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .inicio: return "house"
-        case .requisicoes: return "tray.full"
-        case .feitos: return "checkmark.seal"
+        case .fazerRequisicao: return "square.and.pencil"
+        case .verRequisicoes: return "list.bullet.clipboard"
         case .perfil: return "person.crop.circle"
         }
     }
 }
 
 struct ContentView: View {
+    @EnvironmentObject private var authViewModel: AuthViewModel
+
+    var body: some View {
+        Group {
+            if authViewModel.isRestoringSession {
+                SessionLoadingView()
+            } else if let session = authViewModel.session {
+                DashboardView(session: session)
+            } else {
+                LoginView()
+            }
+        }
+    }
+}
+
+private struct DashboardView: View {
+    @StateObject private var appDataViewModel: AppDataViewModel
     @State private var selectedSection: AppSection = .inicio
     @State private var isSidebarVisible = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    init(session: UserSession) {
+        _appDataViewModel = StateObject(wrappedValue: AppDataViewModel(userSession: session))
+    }
 
     private var isCompact: Bool { horizontalSizeClass == .compact }
 
@@ -35,6 +56,12 @@ struct ContentView: View {
                 regularLayout
             }
         }
+        .task {
+            if appDataViewModel.profile == nil && appDataViewModel.isLoading == false {
+                await appDataViewModel.load()
+            }
+        }
+        .environmentObject(appDataViewModel)
     }
 
     private var regularLayout: some View {
@@ -93,12 +120,30 @@ struct ContentView: View {
         switch selectedSection {
         case .inicio:
             HomeView(selectedSection: $selectedSection)
-        case .requisicoes:
+        case .fazerRequisicao:
+            CreateRequisitionView()
+        case .verRequisicoes:
             RequisitionsView()
-        case .feitos:
-            CompletedView()
         case .perfil:
             ProfileView()
+        }
+    }
+}
+
+private struct SessionLoadingView: View {
+    var body: some View {
+        ZStack {
+            AppTheme.backgroundGradient.ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                ProgressView()
+                    .tint(AppTheme.deepBlue)
+                    .scaleEffect(1.2)
+
+                Text("Validando sessao...")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(AppTheme.deepBlue)
+            }
         }
     }
 }
@@ -126,7 +171,7 @@ private struct MobileHeader: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Almoxarifado")
+                Text("requisi+")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.secondary)
 
