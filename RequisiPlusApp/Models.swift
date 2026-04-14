@@ -93,7 +93,7 @@ extension MaterialType {
             .replacingOccurrences(of: "_", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        MaterialType(
+        return MaterialType(
             id: category,
             title: formattedTitle,
             description: "Categoria liberada."
