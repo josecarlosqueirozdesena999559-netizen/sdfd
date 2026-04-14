@@ -46,9 +46,10 @@ struct LoginView: View {
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(.white)
 
-            Text("Acesse o almoxarifado com o mesmo visual do restante do app.")
+            Text("Acesse a plataforma com suas credenciais para fazer login.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.white.opacity(0.84))
+                .padding(.top, 8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 18)

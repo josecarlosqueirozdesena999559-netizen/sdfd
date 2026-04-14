@@ -39,7 +39,7 @@ final class AppDataViewModel: ObservableObject {
                 : "Sem pendencias no momento.",
             message: summary.pendingCount > 0
                 ? "Abra a aba de requisicoes para acompanhar o status e conferir os detalhes."
-                : "Suas requisicoes estao em dia. Voce pode abrir uma nova solicitacao quando precisar.",
+                : "Suas requisicoes estao em dia. Voce pode abrir uma nova requisicao quando precisar.",
             actionTitle: summary.pendingCount > 0 ? "Ver requisicoes" : "Fazer requisicao"
         )
     }

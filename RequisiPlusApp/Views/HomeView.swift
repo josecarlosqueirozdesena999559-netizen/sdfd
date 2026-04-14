@@ -22,7 +22,7 @@ struct HomeView: View {
                         ProgressView()
                             .tint(AppTheme.primaryBlue)
 
-                        Text("Carregando informacoes...")
+                        Text("Carregando informacoes do app...")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(AppTheme.textMuted)
                     }
@@ -58,7 +58,7 @@ struct HomeView: View {
                     Button {
                         selectedSection = appDataViewModel.summary.pendingCount > 0 ? .verRequisicoes : .fazerRequisicao
                     } label: {
-                        Text(appDataViewModel.summary.pendingCount > 0 ? "Ver requisicoes" : "Nova requisicao")
+                        Text(appDataViewModel.summary.pendingCount > 0 ? "Ver requisicoes" : "Fazer requisicao")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.deepBlue)
                             .padding(.horizontal, 18)
@@ -124,7 +124,7 @@ struct HomeView: View {
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
-                Text("Numero \(requisition.code)")
+                Text("Codigo \(requisition.code)")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(AppTheme.primaryBlue)
 

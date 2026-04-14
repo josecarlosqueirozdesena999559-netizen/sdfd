@@ -13,10 +13,10 @@ struct CreateRequisitionView: View {
             if appDataViewModel.materialTypes.isEmpty {
                 PrimaryCard {
                     SectionHeader(
-                        title: "Sem categorias"
+                        title: "Sem categorias disponiveis"
                     )
 
-                    Text("Seu usuario nao possui categorias liberadas.")
+                    Text("Seu usuario nao possui categorias liberadas no momento.")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textMuted)
                 }
@@ -36,7 +36,7 @@ struct CreateRequisitionView: View {
 
             if let successMessage = appDataViewModel.successMessage {
                 feedbackCard(
-                    title: "Requisicao enviada",
+                    title: "Requisicao enviada com sucesso",
                     message: successMessage,
                     tint: AppTheme.success,
                     icon: "checkmark.circle.fill"
@@ -69,8 +69,8 @@ struct CreateRequisitionView: View {
     private var categorySelectorCard: some View {
         PrimaryCard {
             SectionHeader(
-                title: "Categorias do usuario",
-                subtitle: "Escolha uma categoria."
+                title: "Categorias disponiveis",
+                subtitle: "Escolha uma categoria para montar a requisicao."
             )
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -112,7 +112,7 @@ struct CreateRequisitionView: View {
         PrimaryCard {
             SectionHeader(
                 title: "Itens de \(shortTitle(for: material))",
-                subtitle: "Preencha e envie."
+                subtitle: "Preencha os campos e envie a requisicao."
             )
 
             HStack(spacing: 12) {
@@ -162,7 +162,7 @@ struct CreateRequisitionView: View {
                             .tint(.white)
                     }
 
-                    Text(appDataViewModel.createInProgress ? "Enviando..." : "Enviar requisicao")
+                    Text(appDataViewModel.createInProgress ? "Enviando requisicao..." : "Enviar requisicao")
                         .font(.system(size: 16, weight: .bold))
                 }
                 .foregroundStyle(.white)

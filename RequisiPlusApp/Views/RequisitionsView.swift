@@ -43,7 +43,7 @@ struct RequisitionsView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(AppTheme.textMuted)
 
-                TextField("Buscar por numero, categoria ou status", text: $searchText)
+                TextField("Buscar por codigo, categoria ou status", text: $searchText)
                     .foregroundStyle(AppTheme.textPrimary)
                     .tint(AppTheme.deepBlue)
             }
@@ -286,7 +286,7 @@ struct StatusBadge: View {
 
     private var statusLabel: String {
         if normalized.contains("conclu") || normalized.contains("finaliz") || normalized.contains("entreg") {
-            return "Concluido"
+            return "Concluida"
         }
 
         if normalized.contains("andamento") || normalized.contains("conferencia") || normalized.contains("separ") {
@@ -301,7 +301,7 @@ struct StatusBadge: View {
     }
 
     private var tint: Color {
-        if statusLabel == "Concluido" {
+        if statusLabel == "Concluida" {
             return AppTheme.success
         }
 

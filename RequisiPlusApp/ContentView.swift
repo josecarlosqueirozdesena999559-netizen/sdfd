@@ -92,7 +92,7 @@ private struct SessionLoadingView: View {
                     .tint(AppTheme.deepBlue)
                     .scaleEffect(1.2)
 
-                Text("Validando sessao...")
+                Text("Validando sua sessao...")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppTheme.deepBlue)
             }
@@ -133,7 +133,7 @@ extension AppSection {
         case .inicio:
             return "Inicio"
         case .fazerRequisicao:
-            return "Requisicao"
+            return "Fazer requisicao"
         case .verRequisicoes:
             return "Requisicoes"
         case .perfil:
@@ -146,7 +146,7 @@ extension AppSection {
         case .inicio:
             return "Inicio"
         case .fazerRequisicao:
-            return "Requisicao"
+            return "Fazer requisicao"
         case .verRequisicoes:
             return "Requisicoes"
         case .perfil:

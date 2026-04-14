@@ -55,7 +55,7 @@ struct ProfileView: View {
 
     private var detailsCard: some View {
         PrimaryCard {
-            SectionHeader(title: "Informacoes da conta", subtitle: "Dados usados para acompanhar suas requisicoes.")
+            SectionHeader(title: "Informacoes da conta", subtitle: "Dados usados para acompanhar suas requisicoes no app.")
 
             VStack(spacing: 0) {
                 infoRow(icon: "building.2", title: "Setor", value: appDataViewModel.profile?.setor ?? "Nao informado")
