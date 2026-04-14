@@ -10,8 +10,8 @@ struct LoginView: View {
     var body: some View {
         GeometryReader { geometry in
             let isCompact = geometry.size.height < 750
-            let horizontalPadding = max(20, geometry.size.width * 0.06)
-            let contentWidth = min(geometry.size.width - (horizontalPadding * 2), 460)
+            let horizontalPadding = max(14, geometry.size.width * 0.04)
+            let contentWidth = min(geometry.size.width - (horizontalPadding * 2), 620)
 
             ZStack {
                 backgroundLayer
@@ -90,11 +90,9 @@ struct LoginView: View {
                         .font(.system(size: isCompact ? 30 : 34, weight: .bold))
                         .foregroundStyle(.white)
 
-                    Text("Solicitações pessoais de materiais com mais organização e praticidade")
-                        .font(.system(size: isCompact ? 14 : 16, weight: .medium))
+                    Text("Acesso ao almoxarifado")
+                        .font(.system(size: isCompact ? 15 : 17, weight: .medium))
                         .foregroundStyle(Color.white.opacity(0.88))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 22)
                 }
             }
             .padding(.top, max(topInset + 18, 30))
@@ -102,23 +100,13 @@ struct LoginView: View {
             .frame(maxWidth: .infinity)
         }
         .frame(height: isCompact ? 270 : 310)
-        .clipShape(
-            RoundedRectangle(cornerRadius: 0, style: .continuous)
-        )
     }
 
     private func formCard(isCompact: Bool) -> some View {
         VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Entrar")
-                    .font(.system(size: isCompact ? 30 : 34, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
-
-                Text("Acesse sua conta para acompanhar e criar requisições com rapidez.")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(AppTheme.textMuted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text("Entrar")
+                .font(.system(size: isCompact ? 30 : 34, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
 
             VStack(spacing: 16) {
                 inputField(
@@ -162,14 +150,14 @@ struct LoginView: View {
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 60)
                     .background(
                         LinearGradient(
                             colors: [AppTheme.deepBlue, AppTheme.primaryBlue],
                             startPoint: .leading,
                             endPoint: .trailing
                         ),
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                     )
                     .shadow(color: AppTheme.deepBlue.opacity(0.22), radius: 14, x: 0, y: 8)
                 }
@@ -177,33 +165,9 @@ struct LoginView: View {
                 .disabled(authViewModel.isLoading || email.isEmpty || password.isEmpty)
                 .opacity(authViewModel.isLoading || email.isEmpty || password.isEmpty ? 0.65 : 1)
             }
-
-            VStack(spacing: 14) {
-                HStack(spacing: 10) {
-                    Circle()
-                        .fill(AppTheme.primaryBlue.opacity(0.12))
-                        .frame(width: 34, height: 34)
-                        .overlay(
-                            Image(systemName: "shield.checkerboard")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(AppTheme.deepBlue)
-                        )
-
-                    Text("Acesso seguro e interface pensada para uso rápido no dia a dia.")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(AppTheme.textMuted)
-                }
-
-                Text("Ao acessar, você concorda com os termos de uso, política de privacidade e aviso sobre biometria.")
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(AppTheme.textMuted)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-            }
-            .padding(.top, 2)
         }
-        .padding(.horizontal, 22)
-        .padding(.vertical, isCompact ? 22 : 26)
+        .padding(.horizontal, isCompact ? 22 : 30)
+        .padding(.vertical, isCompact ? 24 : 32)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Color.white)
@@ -232,7 +196,7 @@ struct LoginView: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .foregroundStyle(focusedField == field ? AppTheme.deepBlue : AppTheme.textMuted)
-                    .frame(width: 18)
+                    .frame(width: 20)
 
                 TextField("", text: text, prompt: Text(prompt).foregroundStyle(AppTheme.textMuted.opacity(0.65)))
                     .textInputAutocapitalization(.never)
@@ -247,7 +211,7 @@ struct LoginView: View {
                     }
             }
             .padding(.horizontal, 16)
-            .frame(height: 56)
+            .frame(height: 62)
             .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -271,7 +235,7 @@ struct LoginView: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .foregroundStyle(focusedField == field ? AppTheme.deepBlue : AppTheme.textMuted)
-                    .frame(width: 18)
+                    .frame(width: 20)
 
                 SecureField("", text: text, prompt: Text(prompt).foregroundStyle(AppTheme.textMuted.opacity(0.65)))
                     .textInputAutocapitalization(.never)
@@ -285,7 +249,7 @@ struct LoginView: View {
                     }
             }
             .padding(.horizontal, 16)
-            .frame(height: 56)
+            .frame(height: 62)
             .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)

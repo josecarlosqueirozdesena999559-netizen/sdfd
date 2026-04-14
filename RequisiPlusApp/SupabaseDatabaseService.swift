@@ -68,7 +68,7 @@ struct SupabaseDatabaseService {
 
         let path = "/rest/v1/itens?select=id,nome,unidade,categoria,subcategoria&categoria=in.(\(encodedCategories))&order=nome.asc"
         let records: [CatalogItemRecord] = try await perform(path: path, method: "GET", accessToken: userSession.accessToken)
-        return records.map(\.toDomain)
+        return records.map { $0.toDomain() }
     }
 
     func createRequisition(

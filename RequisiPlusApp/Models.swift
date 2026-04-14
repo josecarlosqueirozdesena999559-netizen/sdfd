@@ -32,13 +32,17 @@ struct MaterialCatalogItem: Identifiable, Hashable {
     let subcategory: String?
 
     var detail: String {
-        let pieces = [subcategory, unit]
-            .compactMap { value in
-                guard let value, value.isEmpty == false else { return nil }
-                return value
-            }
+        var pieces: [String] = []
 
-        return pieces.isEmpty ? "Sem detalhe complementar" : pieces.joined(separator: " • ")
+        if let subcategory, subcategory.isEmpty == false {
+            pieces.append(subcategory)
+        }
+
+        if unit.isEmpty == false {
+            pieces.append(unit)
+        }
+
+        return pieces.isEmpty ? "Sem detalhes" : pieces.joined(separator: " | ")
     }
 }
 
@@ -88,7 +92,7 @@ extension MaterialType {
         MaterialType(
             id: category,
             title: category,
-            description: "Categoria liberada para o seu usuario."
+            description: "Categoria liberada."
         )
     }
 }

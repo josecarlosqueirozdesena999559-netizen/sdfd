@@ -8,7 +8,7 @@ struct HomeView: View {
         ScreenContainer(title: "", subtitle: "") {
             if let errorMessage = appDataViewModel.errorMessage, errorMessage.isEmpty == false {
                 PrimaryCard {
-                    SectionHeader(title: "Falha ao carregar", subtitle: "Nao foi possivel atualizar seus dados agora.")
+                    SectionHeader(title: "Falha ao carregar")
 
                     Text(errorMessage)
                         .font(.system(size: 14, weight: .semibold))
@@ -16,7 +16,7 @@ struct HomeView: View {
                 }
             } else if appDataViewModel.isLoading && appDataViewModel.requisitions.isEmpty {
                 PrimaryCard {
-                    SectionHeader(title: "Atualizando painel", subtitle: "Buscando suas requisicoes mais recentes.")
+                    SectionHeader(title: "Atualizando")
 
                     HStack(spacing: 12) {
                         ProgressView()
@@ -46,20 +46,13 @@ struct HomeView: View {
                 .offset(x: 28, y: -32)
 
             VStack(alignment: .leading, spacing: 18) {
-                Text(appDataViewModel.summary.pendingCount > 0 ? "Painel ativo" : "Tudo organizado")
+                Text("Inicio")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.82))
 
-                Text(appDataViewModel.summary.pendingCount > 0 ? "Voce tem requisicoes aguardando retorno" : "Sua area esta em dia")
+                Text(appDataViewModel.summary.pendingCount > 0 ? "Requisicoes pendentes" : "Tudo em dia")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(.white)
-
-                Text(appDataViewModel.summary.pendingCount > 0
-                     ? "Acompanhe os pedidos em andamento e avance nas proximas acoes sem perder contexto."
-                     : "Use a area de requisicao para registrar uma nova solicitacao quando precisar.")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.86))
-                    .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 12) {
                     Button {
@@ -103,8 +96,7 @@ struct HomeView: View {
     private var recentRequestsCard: some View {
         PrimaryCard {
             SectionHeader(
-                title: "Requisicoes recentes",
-                subtitle: "Veja rapidamente as ultimas movimentacoes."
+                title: "Requisicoes recentes"
             )
 
             if recentRequisitions.isEmpty {

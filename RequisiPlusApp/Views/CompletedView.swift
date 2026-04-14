@@ -14,11 +14,10 @@ struct CreateRequisitionView: View {
             if appDataViewModel.materialTypes.isEmpty {
                 PrimaryCard {
                     SectionHeader(
-                        title: "Sem categorias liberadas",
-                        subtitle: "Seu usuario ainda nao possui categorias disponiveis para requisicao."
+                        title: "Sem categorias"
                     )
 
-                    Text("Entre em contato com o administrador para liberar as categorias no cadastro do usuario.")
+                    Text("Seu usuario nao possui categorias liberadas.")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textMuted)
                 }
@@ -72,7 +71,7 @@ struct CreateRequisitionView: View {
         PrimaryCard {
             SectionHeader(
                 title: "Categorias do usuario",
-                subtitle: "Escolha uma categoria liberada no seu cadastro para montar a requisicao."
+                subtitle: "Escolha uma categoria."
             )
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -114,7 +113,7 @@ struct CreateRequisitionView: View {
         PrimaryCard {
             SectionHeader(
                 title: "Itens de \(shortTitle(for: material))",
-                subtitle: "Preencha a tabela e envie para gravar no banco que alimenta o PDF no site."
+                subtitle: "Preencha e envie."
             )
 
             HStack(spacing: 12) {
