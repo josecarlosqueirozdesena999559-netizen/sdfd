@@ -173,4 +173,11 @@ enum JSONValue: Codable {
         }
         return nil
     }
+
+    var boolValue: Bool? {
+        if case .bool(let value) = self {
+            return value
+        }
+        return nil
+    }
 }

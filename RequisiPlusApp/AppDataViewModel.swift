@@ -12,6 +12,7 @@ final class AppDataViewModel: ObservableObject {
     @Published private(set) var chatThreads: [ChatThread] = []
     @Published private(set) var activeChatMessages: [ChatMessage] = []
     @Published private(set) var activeThreadId: String?
+    @Published private(set) var activeTypingIndicator: ChatTypingIndicator?
     @Published var isLoading = false
     @Published var createInProgress = false
     @Published var chatSendInProgress = false
@@ -22,6 +23,9 @@ final class AppDataViewModel: ObservableObject {
     private let databaseService: SupabaseDatabaseService
     private let realtimeService: SupabaseRealtimeService
     private var lastRegisteredPushToken: String?
+    private var typingResetTask: Task<Void, Never>?
+    private var isSendingTyping = false
+    private var typingThreadId: String?
 
     init(
         userSession: UserSession,
@@ -35,9 +39,9 @@ final class AppDataViewModel: ObservableObject {
         self.realtimeService.start(
             session: userSession,
             subscriptions: Self.realtimeSubscriptions(for: userSession.user.id)
-        ) { [weak self] table in
+        ) { [weak self] event in
             Task {
-                await self?.refreshFromRealtime(changedTable: table)
+                await self?.handleRealtimeEvent(event)
             }
         }
     }
@@ -144,7 +148,9 @@ final class AppDataViewModel: ObservableObject {
     }
 
     func loadMessages(for threadId: String) async throws {
+        stopTyping()
         activeThreadId = threadId
+        activeTypingIndicator = nil
         activeChatMessages = try await databaseService.fetchChatMessages(session: userSession, threadId: threadId)
 
         if let profile {
@@ -191,6 +197,7 @@ final class AppDataViewModel: ObservableObject {
         }
 
         do {
+            stopTyping()
             _ = try await databaseService.sendChatMessage(
                 session: userSession,
                 profile: profile,
@@ -227,6 +234,57 @@ final class AppDataViewModel: ObservableObject {
         }
     }
 
+    func updateTypingState(for thread: ChatThread?, text: String, isRecording: Bool) {
+        guard let profile, let thread else {
+            stopTyping()
+            return
+        }
+
+        let hasText = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        guard hasText && isRecording == false else {
+            stopTyping()
+            return
+        }
+
+        if isSendingTyping == false || typingThreadId != thread.id {
+            realtimeService.sendChatTyping(
+                threadId: thread.id,
+                senderUserId: profile.id,
+                senderName: profile.name,
+                isTyping: true
+            )
+            isSendingTyping = true
+            typingThreadId = thread.id
+        }
+
+        typingResetTask?.cancel()
+        typingResetTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            await self?.stopTyping()
+        }
+    }
+
+    func stopTyping() {
+        typingResetTask?.cancel()
+        typingResetTask = nil
+
+        guard let profile, isSendingTyping, let typingThreadId else {
+            isSendingTyping = false
+            self.typingThreadId = nil
+            return
+        }
+
+        realtimeService.sendChatTyping(
+            threadId: typingThreadId,
+            senderUserId: profile.id,
+            senderName: profile.name,
+            isTyping: false
+        )
+
+        isSendingTyping = false
+        self.typingThreadId = nil
+    }
+
     func registerPushTokenIfNeeded(deviceToken: String, bundleIdentifier: String, environment: String) async {
         guard let profile, deviceToken.isEmpty == false else {
             return
@@ -261,6 +319,15 @@ final class AppDataViewModel: ObservableObject {
         )
     }
 
+    private func handleRealtimeEvent(_ event: SupabaseRealtimeService.Event) async {
+        switch event {
+        case .postgresChange(let changedTable):
+            await refreshFromRealtime(changedTable: changedTable)
+        case .chatTyping(let threadId, let senderUserId, let senderName, let isTyping):
+            handleChatTyping(threadId: threadId, senderUserId: senderUserId, senderName: senderName, isTyping: isTyping)
+        }
+    }
+
     private func refreshFromRealtime(changedTable: String?) async {
         guard createInProgress == false else { return }
 
@@ -272,6 +339,35 @@ final class AppDataViewModel: ObservableObject {
             }
         default:
             await performLoad(showLoading: false)
+        }
+    }
+
+    private func handleChatTyping(threadId: String, senderUserId: String, senderName: String, isTyping: Bool) {
+        guard profile?.id != senderUserId else { return }
+        guard activeThreadId == threadId else { return }
+
+        if isTyping {
+            activeTypingIndicator = ChatTypingIndicator(
+                threadId: threadId,
+                senderUserId: senderUserId,
+                senderName: senderName,
+                updatedAt: Date()
+            )
+            scheduleTypingIndicatorTimeout(for: threadId, senderUserId: senderUserId)
+        } else if activeTypingIndicator?.senderUserId == senderUserId {
+            activeTypingIndicator = nil
+        }
+    }
+
+    private func scheduleTypingIndicatorTimeout(for threadId: String, senderUserId: String) {
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            await MainActor.run {
+                guard let self else { return }
+                guard self.activeTypingIndicator?.threadId == threadId,
+                      self.activeTypingIndicator?.senderUserId == senderUserId else { return }
+                self.activeTypingIndicator = nil
+            }
         }
     }
 

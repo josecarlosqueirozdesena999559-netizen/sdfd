@@ -46,6 +46,18 @@ struct MessagingView: View {
             guard let newValue else { return }
             selectedThreadID = newValue
         }
+        .onChange(of: messageText) { _, newValue in
+            appDataViewModel.updateTypingState(for: selectedThread, text: newValue, isRecording: recorder.isRecording)
+        }
+        .onChange(of: recorder.isRecording) { _, isRecording in
+            appDataViewModel.updateTypingState(for: selectedThread, text: messageText, isRecording: isRecording)
+        }
+        .onChange(of: selectedThreadID) { _, _ in
+            appDataViewModel.stopTyping()
+        }
+        .onDisappear {
+            appDataViewModel.stopTyping()
+        }
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
@@ -480,6 +492,7 @@ struct MessagingView: View {
 
     private func conversationStatusText(for thread: ChatThread) -> String {
         if recorder.isRecording { return "Gravando audio..." }
+        if appDataViewModel.activeTypingIndicator?.threadId == thread.id { return "Digitando..." }
         if let lastSeenDate = latestSeenDate { return "Visto por ultimo \(lastSeenDescription(for: lastSeenDate))" }
         return thread.counterpartRole
     }

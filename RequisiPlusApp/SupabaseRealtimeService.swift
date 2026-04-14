@@ -1,6 +1,11 @@
 import Foundation
 
 final class SupabaseRealtimeService {
+    enum Event {
+        case postgresChange(String?)
+        case chatTyping(threadId: String, senderUserId: String, senderName: String, isTyping: Bool)
+    }
+
     struct Subscription {
         let topic: String
         let postgresChanges: [PostgresChange]
@@ -23,7 +28,7 @@ final class SupabaseRealtimeService {
     private var accessToken: String = ""
     private var userId: String = ""
     private var subscriptions: [Subscription] = []
-    private var onChange: @MainActor (String?) -> Void = { _ in }
+    private var onEvent: @MainActor (Event) -> Void = { _ in }
 
     init(urlSession: URLSession = .shared) {
         self.urlSession = urlSession
@@ -32,17 +37,36 @@ final class SupabaseRealtimeService {
     func start(
         session: UserSession,
         subscriptions: [Subscription],
-        onChange: @escaping @MainActor (String?) -> Void
+        onEvent: @escaping @MainActor (Event) -> Void
     ) {
         stop()
 
         self.accessToken = session.accessToken
         self.userId = session.user.id
         self.subscriptions = subscriptions
-        self.onChange = onChange
+        self.onEvent = onEvent
         self.isActive = true
 
         connect()
+    }
+
+    func sendChatTyping(threadId: String, senderUserId: String, senderName: String, isTyping: Bool) {
+        let message = RealtimeMessage(
+            topic: "realtime:chat-data",
+            event: "broadcast",
+            payload: .object([
+                "event": .string("chat_typing"),
+                "payload": .object([
+                    "thread_id": .string(threadId),
+                    "sender_user_id": .string(senderUserId),
+                    "sender_name": .string(senderName),
+                    "is_typing": .bool(isTyping)
+                ])
+            ]),
+            ref: nextRef(),
+            joinRef: nil
+        )
+        send(message: message)
     }
 
     func stop() {
@@ -160,10 +184,28 @@ final class SupabaseRealtimeService {
         if envelope.event == "postgres_changes" {
             let changedTable = envelope.payload.objectValue?["data"]?.objectValue?["table"]?.stringValue
             Task { @MainActor in
-                onChange(changedTable)
+                onEvent(.postgresChange(changedTable))
             }
+        } else if envelope.event == "broadcast" {
+            handleBroadcast(envelope.payload)
         } else if envelope.event == "phx_error" || envelope.event == "phx_close" {
             scheduleReconnect()
+        }
+    }
+
+    private func handleBroadcast(_ payload: JSONValue) {
+        guard let payloadObject = payload.objectValue,
+              payloadObject["event"]?.stringValue == "chat_typing",
+              let eventPayload = payloadObject["payload"]?.objectValue,
+              let threadId = eventPayload["thread_id"]?.stringValue,
+              let senderUserId = eventPayload["sender_user_id"]?.stringValue,
+              let senderName = eventPayload["sender_name"]?.stringValue,
+              let isTyping = eventPayload["is_typing"]?.boolValue else {
+            return
+        }
+
+        Task { @MainActor in
+            onEvent(.chatTyping(threadId: threadId, senderUserId: senderUserId, senderName: senderName, isTyping: isTyping))
         }
     }
 

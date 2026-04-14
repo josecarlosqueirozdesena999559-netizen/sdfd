@@ -187,6 +187,13 @@ extension UserProfile {
     }
 }
 
+struct ChatTypingIndicator: Hashable {
+    let threadId: String
+    let senderUserId: String
+    let senderName: String
+    let updatedAt: Date
+}
+
 extension Date {
     var shortBrazilianDateTime: String {
         AppDateFormatter.shortDateTime.string(from: self)
