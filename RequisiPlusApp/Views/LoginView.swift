@@ -62,40 +62,46 @@ struct LoginView: View {
     }
 
     private var formContent: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Seu acesso")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
+        PrimaryCard(padding: 22) {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Seu acesso")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
 
-                Text("Use seu e-mail e senha para continuar.")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(AppTheme.textMuted)
-            }
+                    Text("Use seu e-mail e senha para continuar.")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AppTheme.textMuted)
+                }
 
-            VStack(spacing: 16) {
-                inputField(
-                    title: "E-mail",
-                    icon: "envelope.fill",
-                    text: $email,
-                    prompt: "seu@email.com",
-                    keyboardType: .emailAddress,
-                    field: .email
-                )
+                SoftPanel {
+                    VStack(spacing: 16) {
+                        inputField(
+                            title: "E-mail",
+                            icon: "envelope.fill",
+                            text: $email,
+                            prompt: "seu@email.com",
+                            keyboardType: .emailAddress,
+                            field: .email
+                        )
 
-                secureInputField(
-                    title: "Senha",
-                    icon: "lock.fill",
-                    text: $password,
-                    prompt: "Digite sua senha",
-                    field: .password
-                )
+                        secureInputField(
+                            title: "Senha",
+                            icon: "lock.fill",
+                            text: $password,
+                            prompt: "Digite sua senha",
+                            field: .password
+                        )
+                    }
+                }
 
                 if let errorMessage = authViewModel.errorMessage, !errorMessage.isEmpty {
-                    Text(errorMessage)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.red.opacity(0.9))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    SoftPanel {
+                        Text(errorMessage)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.red.opacity(0.9))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
 
                 Button {
@@ -130,7 +136,6 @@ struct LoginView: View {
                 .opacity(authViewModel.isLoading || email.isEmpty || password.isEmpty ? 0.65 : 1)
             }
         }
-        .padding(.horizontal, 2)
     }
 
     private func inputField(

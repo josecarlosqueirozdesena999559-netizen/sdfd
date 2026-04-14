@@ -78,18 +78,34 @@ struct HomeView: View {
     }
 
     private var summaryRow: some View {
-        HStack(spacing: 12) {
-            CompactMetricCard(
-                title: "Pendentes",
-                value: "\(appDataViewModel.summary.pendingCount)",
-                systemImage: "tray.full"
-            )
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                CompactMetricCard(
+                    title: "Pendentes",
+                    value: "\(appDataViewModel.summary.pendingCount)",
+                    systemImage: "tray.full"
+                )
 
-            CompactMetricCard(
-                title: "Concluidas",
-                value: "\(completedCount)",
-                systemImage: "checkmark.circle"
-            )
+                CompactMetricCard(
+                    title: "Concluidas",
+                    value: "\(completedCount)",
+                    systemImage: "checkmark.circle"
+                )
+            }
+
+            HStack(spacing: 12) {
+                InfoStrip(
+                    icon: "person.crop.circle",
+                    title: "Solicitante",
+                    value: appDataViewModel.profile?.name ?? "Usuario"
+                )
+
+                InfoStrip(
+                    icon: "building.2",
+                    title: "Setor",
+                    value: appDataViewModel.profile?.setor ?? "Nao informado"
+                )
+            }
         }
     }
 
@@ -116,7 +132,7 @@ struct HomeView: View {
     private func requisitionRow(_ requisition: Requisition) -> some View {
         HStack(alignment: .top, spacing: 14) {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(AppTheme.deepBlue)
+                .fill(statusTint(for: requisition))
                 .frame(width: 5, height: 56)
 
             VStack(alignment: .leading, spacing: 6) {
@@ -139,6 +155,10 @@ struct HomeView: View {
         }
         .padding(16)
         .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AppTheme.fieldBorder.opacity(0.75), lineWidth: 1)
+        )
     }
 
     private var completedCount: Int {
@@ -162,5 +182,16 @@ struct HomeView: View {
         }
 
         return "Requisicoes pendentes"
+    }
+
+    private func statusTint(for requisition: Requisition) -> Color {
+        let status = requisition.normalizedStatus
+        if status.contains("conclu") || status.contains("finaliz") || status.contains("entreg") {
+            return AppTheme.success
+        }
+        if status.contains("assin") || status.contains("andamento") || status.contains("conferencia") {
+            return AppTheme.warning
+        }
+        return AppTheme.primaryBlue
     }
 }

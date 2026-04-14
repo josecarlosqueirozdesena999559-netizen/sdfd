@@ -20,18 +20,10 @@ struct CreateRequisitionView: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textMuted)
                 }
+            } else if let selectedMaterial {
+                materialItemsScreen(for: selectedMaterial)
             } else {
                 categorySelectorCard
-
-                if let selectedMaterial {
-                    itemRequestCard(for: selectedMaterial)
-                } else {
-                    PrimaryCard {
-                        Text("Escolha uma categoria para ver os itens disponiveis.")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(AppTheme.textMuted)
-                    }
-                }
             }
 
             if let successMessage = appDataViewModel.successMessage {
@@ -52,16 +44,9 @@ struct CreateRequisitionView: View {
                 )
             }
         }
-        .onAppear {
-            if selectedMaterial == nil {
-                selectedMaterial = appDataViewModel.materialTypes.first
-            }
-        }
         .onChange(of: appDataViewModel.materialTypes) { _, newValue in
-            if selectedMaterial == nil {
-                selectedMaterial = newValue.first
-            } else if let selectedMaterial, newValue.contains(selectedMaterial) == false {
-                self.selectedMaterial = newValue.first
+            if let selectedMaterial, newValue.contains(selectedMaterial) == false {
+                self.selectedMaterial = nil
             }
         }
     }
@@ -69,8 +54,8 @@ struct CreateRequisitionView: View {
     private var categorySelectorCard: some View {
         PrimaryCard {
             SectionHeader(
-                title: "Categorias disponiveis",
-                subtitle: "Escolha uma categoria para montar a requisicao."
+                title: "Menu de materiais",
+                subtitle: "Escolha primeiro a categoria. Depois a tabela abre em tela cheia para facilitar a visualizacao."
             )
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -82,24 +67,24 @@ struct CreateRequisitionView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(shortTitle(for: material))
                                 .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(selectedMaterial == material ? .white : AppTheme.textPrimary)
+                                .foregroundStyle(AppTheme.textPrimary)
                                 .multilineTextAlignment(.leading)
 
                             Text(material.description)
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(selectedMaterial == material ? Color.white.opacity(0.78) : AppTheme.textMuted)
+                                .foregroundStyle(AppTheme.textMuted)
                                 .lineLimit(2)
 
                             Text("\(filteredCatalogCount(for: material)) itens")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(selectedMaterial == material ? Color.white.opacity(0.84) : AppTheme.textMuted)
+                                .foregroundStyle(AppTheme.textMuted)
                         }
                         .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
                         .padding(.horizontal, 16)
-                        .background(categoryBackground(isSelected: selectedMaterial == material))
+                        .background(categoryBackground())
                         .overlay(
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(selectedMaterial == material ? AppTheme.deepBlue : AppTheme.fieldBorder, lineWidth: 1)
+                                .stroke(AppTheme.fieldBorder, lineWidth: 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -108,40 +93,70 @@ struct CreateRequisitionView: View {
         }
     }
 
+    private func materialItemsScreen(for material: MaterialType) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Button {
+                selectedMaterial = nil
+                searchText = ""
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 13, weight: .bold))
+
+                    Text("Voltar para categorias")
+                        .font(.system(size: 14, weight: .bold))
+                }
+                .foregroundStyle(AppTheme.deepBlue)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(Color.white, in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(AppTheme.fieldBorder, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+
+            InfoStrip(
+                icon: "shippingbox.fill",
+                title: "Categoria selecionada",
+                value: shortTitle(for: material)
+            )
+
+            itemRequestCard(for: material)
+        }
+    }
+
     private func itemRequestCard(for material: MaterialType) -> some View {
         PrimaryCard {
             SectionHeader(
                 title: "Itens de \(shortTitle(for: material))",
-                subtitle: "Preencha os campos e envie a requisicao."
+                subtitle: "Visualizacao ampliada para preencher com mais conforto."
             )
 
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(AppTheme.textMuted)
-
-                TextField("Pesquisar item", text: $searchText)
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .tint(AppTheme.deepBlue)
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 54)
-            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(AppTheme.fieldBorder, lineWidth: 1)
+            SearchFieldRow(
+                prompt: "Pesquisar item",
+                text: $searchText
             )
 
-            VStack(spacing: 14) {
-                if filteredItems(for: material).isEmpty {
-                    Text("Nao existem itens cadastrados no banco para essa categoria.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textMuted)
-                } else {
-                    ForEach(filteredItems(for: material)) { item in
-                        itemRow(for: item)
+            requestTableHeader
+
+            ScrollView {
+                LazyVStack(spacing: 14) {
+                    if filteredItems(for: material).isEmpty {
+                        Text("Nao existem itens cadastrados no banco para essa categoria.")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.textMuted)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        ForEach(filteredItems(for: material)) { item in
+                            itemRow(for: item)
+                        }
                     }
                 }
             }
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 320, maxHeight: 520)
 
             Button {
                 Task {
@@ -179,8 +194,26 @@ struct CreateRequisitionView: View {
         }
     }
 
+    private var requestTableHeader: some View {
+        HStack(spacing: 12) {
+            Text("Item")
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("Saldo")
+                .frame(width: 88, alignment: .center)
+
+            Text("Qtd")
+                .frame(width: 88, alignment: .center)
+        }
+        .font(.system(size: 12, weight: .bold))
+        .foregroundStyle(AppTheme.textMuted)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(AppTheme.skyBlue.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
     private func itemRow(for item: MaterialCatalogItem) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.name)
                     .font(.system(size: 15, weight: .bold))
@@ -189,27 +222,29 @@ struct CreateRequisitionView: View {
                 Text(item.detail)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(AppTheme.textMuted)
+                    .lineLimit(2)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: 12) {
-                compactField(
-                    title: "Saldo atual",
-                    prompt: "Digite aqui",
-                    text: Binding(
-                        get: { currentBalances[item.id, default: ""] },
-                        set: { currentBalances[item.id] = $0 }
-                    )
+            compactField(
+                title: "Saldo atual",
+                prompt: "0",
+                text: Binding(
+                    get: { currentBalances[item.id, default: ""] },
+                    set: { currentBalances[item.id] = $0 }
                 )
+            )
+            .frame(width: 88)
 
-                compactField(
-                    title: "Quantidade",
-                    prompt: "Digite aqui",
-                    text: Binding(
-                        get: { requestedQuantities[item.id, default: ""] },
-                        set: { requestedQuantities[item.id] = $0 }
-                    )
+            compactField(
+                title: "Quantidade",
+                prompt: "0",
+                text: Binding(
+                    get: { requestedQuantities[item.id, default: ""] },
+                    set: { requestedQuantities[item.id] = $0 }
                 )
-            }
+            )
+            .frame(width: 88)
         }
         .padding(16)
         .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -220,14 +255,11 @@ struct CreateRequisitionView: View {
     }
 
     private func compactField(title: String, prompt: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(AppTheme.textMuted)
-
+        VStack(alignment: .center, spacing: 6) {
             TextField(prompt, text: text)
                 .keyboardType(.decimalPad)
-                .padding(.horizontal, 12)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
                 .frame(height: 44)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
@@ -237,7 +269,7 @@ struct CreateRequisitionView: View {
                 .foregroundStyle(AppTheme.textPrimary)
                 .tint(AppTheme.deepBlue)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityLabel(title)
     }
 
     private func filteredItems(for material: MaterialType) -> [MaterialCatalogItem] {
@@ -283,15 +315,9 @@ struct CreateRequisitionView: View {
             .replacingOccurrences(of: "_", with: " ")
     }
 
-    private func categoryBackground(isSelected: Bool) -> some View {
+    private func categoryBackground() -> some View {
         RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(isSelected ? Color.clear : Color.white)
-            .overlay {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(AppTheme.heroGradient)
-                }
-            }
+            .fill(Color.white)
     }
 
     private func categoryItems(for material: MaterialType) -> [MaterialCatalogItem] {

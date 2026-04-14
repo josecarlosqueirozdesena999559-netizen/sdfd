@@ -37,22 +37,11 @@ struct RequisitionsView: View {
 
     private var searchCard: some View {
         PrimaryCard {
-            SectionHeader(title: "Requisicoes")
+            SectionHeader(title: "Requisicoes", subtitle: "Pesquise por codigo, categoria ou status e filtre rapidamente o resultado.")
 
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(AppTheme.textMuted)
-
-                TextField("Buscar por codigo, categoria ou status", text: $searchText)
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .tint(AppTheme.deepBlue)
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 54)
-            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(AppTheme.fieldBorder, lineWidth: 1)
+            SearchFieldRow(
+                prompt: "Buscar por codigo, categoria ou status",
+                text: $searchText
             )
 
             HStack(spacing: 10) {
@@ -67,6 +56,11 @@ struct RequisitionsView: View {
 
     private var listCard: some View {
         PrimaryCard {
+            SectionHeader(
+                title: "Lista completa",
+                subtitle: "\(filteredRequisitions.count) resultado(s) exibido(s)."
+            )
+
             if filteredRequisitions.isEmpty {
                 Text("Nenhuma requisicao encontrada.")
                     .font(.system(size: 14, weight: .medium))
@@ -125,9 +119,10 @@ struct RequisitionsView: View {
                 StatusBadge(status: requisition.statusDisplay)
             }
 
-            HStack(spacing: 14) {
+            HStack(spacing: 10) {
                 rowMeta(icon: "calendar", text: requisition.date)
                 rowMeta(icon: "building.2", text: requisition.sector)
+                rowMeta(icon: "shippingbox", text: requisition.materialType.capitalized)
             }
         }
         .padding(16)
@@ -146,6 +141,9 @@ struct RequisitionsView: View {
         }
         .font(.system(size: 12, weight: .medium))
         .foregroundStyle(AppTheme.textMuted)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.white.opacity(0.9), in: Capsule())
     }
 
     private func statusColor(for requisition: Requisition) -> Color {

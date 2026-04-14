@@ -57,46 +57,12 @@ struct ProfileView: View {
         PrimaryCard {
             SectionHeader(title: "Informacoes da conta", subtitle: "Dados usados para acompanhar suas requisicoes no app.")
 
-            VStack(spacing: 0) {
-                infoRow(icon: "building.2", title: "Setor", value: appDataViewModel.profile?.setor ?? "Nao informado")
-                divider
-                infoRow(icon: "person.text.rectangle", title: "Perfil", value: appDataViewModel.profile?.role ?? "Usuario")
-                divider
-                infoRow(icon: "clock", title: "Ultimo acesso", value: authViewModel.lastAccessDescription)
+            VStack(spacing: 12) {
+                InfoStrip(icon: "building.2", title: "Setor", value: appDataViewModel.profile?.setor ?? "Nao informado")
+                InfoStrip(icon: "person.text.rectangle", title: "Perfil", value: appDataViewModel.profile?.role ?? "Usuario")
+                InfoStrip(icon: "clock", title: "Ultimo acesso", value: authViewModel.lastAccessDescription)
             }
         }
-    }
-
-    private var divider: some View {
-        Divider()
-            .padding(.leading, 50)
-    }
-
-    private func infoRow(icon: String, title: String, value: String) -> some View {
-        HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(AppTheme.deepBlue)
-                .frame(width: 5, height: 40)
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 8) {
-                    Image(systemName: icon)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AppTheme.primaryBlue)
-
-                    Text(title)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(AppTheme.textMuted)
-                }
-
-                Text(value)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
-            }
-
-            Spacer()
-        }
-        .padding(.vertical, 14)
     }
 
     private var logoutButton: some View {
@@ -143,5 +109,9 @@ struct ProfileView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(AppTheme.fieldBorder.opacity(0.85), lineWidth: 1)
+        )
     }
 }
