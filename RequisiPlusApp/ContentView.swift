@@ -44,7 +44,7 @@ private struct DashboardView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            AppTheme.backgroundGradient.ignoresSafeArea()
+            Color(hex: "#F3F6FB").ignoresSafeArea()
 
             VStack(spacing: 0) {
                 MobileHeader(title: selectedSection.rawValue)
@@ -52,13 +52,13 @@ private struct DashboardView: View {
                 currentScreen
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.horizontal, 18)
-                    .padding(.top, 2)
-                    .padding(.bottom, 132)
+                    .padding(.top, 12)
+                    .padding(.bottom, 110)
             }
 
             GlassTabBar(selectedSection: $selectedSection)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 10)
+                .padding(.horizontal, 18)
+                .padding(.bottom, 12)
         }
         .task {
             if appDataViewModel.profile == nil && appDataViewModel.isLoading == false {
@@ -86,7 +86,7 @@ private struct DashboardView: View {
 private struct SessionLoadingView: View {
     var body: some View {
         ZStack {
-            AppTheme.backgroundGradient.ignoresSafeArea()
+            Color(hex: "#F3F6FB").ignoresSafeArea()
 
             VStack(spacing: 16) {
                 ProgressView()
@@ -109,18 +109,26 @@ private struct MobileHeader: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("requisi+")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(AppTheme.primaryBlue)
+                    .foregroundStyle(Color.white.opacity(0.82))
 
                 Text(title)
                     .font(.system(size: 32, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
+                    .foregroundStyle(.white)
             }
 
             Spacer()
         }
         .padding(.horizontal, 18)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
+        .padding(.top, 12)
+        .padding(.bottom, 18)
+        .background(
+            LinearGradient(
+                colors: [AppTheme.deepBlue, AppTheme.midBlue],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea(edges: .top)
+        )
     }
 }
 

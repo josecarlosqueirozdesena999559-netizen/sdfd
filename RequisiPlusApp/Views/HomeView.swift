@@ -7,7 +7,7 @@ struct HomeView: View {
     var body: some View {
         ScreenContainer(
             title: "",
-            subtitle: "Um painel simples para acompanhar suas requisicoes pessoais."
+            subtitle: ""
         ) {
             if let errorMessage = appDataViewModel.errorMessage, errorMessage.isEmpty == false {
                 PrimaryCard {
@@ -40,34 +40,21 @@ struct HomeView: View {
 
     private var statusCard: some View {
         PrimaryCard {
-            HStack(alignment: .top, spacing: 14) {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [AppTheme.deepBlue, AppTheme.primaryBlue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 54, height: 54)
-                    .overlay(
-                        Image(systemName: appDataViewModel.summary.pendingCount > 0 ? "clock.badge.exclamationmark.fill" : "checkmark.seal.fill")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(.white)
-                    )
+            VStack(alignment: .leading, spacing: 14) {
+                Text(appDataViewModel.summary.pendingCount > 0 ? "Pendencias" : "Tudo em dia")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(AppTheme.primaryBlue)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(appDataViewModel.summary.pendingCount > 0 ? "Voce tem pendencias" : "Sem pendencias")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
+                Text(appDataViewModel.summary.pendingCount > 0 ? "Voce tem requisicoes pendentes" : "Sem pendencias no momento")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
 
-                    Text(appDataViewModel.summary.pendingCount > 0
-                         ? "Acompanhe suas solicitacoes em andamento e veja o que precisa de atencao."
-                         : "Suas requisicoes estao em dia. Quando precisar, abra uma nova solicitacao em segundos.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text(appDataViewModel.summary.pendingCount > 0
+                     ? "Acompanhe suas solicitacoes em andamento e resolva o que estiver faltando."
+                     : "Suas requisicoes estao organizadas. Abra uma nova quando precisar.")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(AppTheme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             HStack(spacing: 10) {
@@ -85,7 +72,7 @@ struct HomeView: View {
                                 startPoint: .leading,
                                 endPoint: .trailing
                             ),
-                            in: Capsule()
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                         )
                 }
                 .buttonStyle(.plain)
@@ -132,13 +119,12 @@ struct HomeView: View {
                 VStack(spacing: 12) {
                     ForEach(recentRequisitions) { requisition in
                         HStack(spacing: 12) {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(AppTheme.primaryBlue.opacity(0.10))
-                                .frame(width: 42, height: 42)
+                            Rectangle()
+                                .fill(AppTheme.deepBlue)
+                                .frame(width: 4, height: 44)
+                                .padding(.trailing, 2)
                                 .overlay(
-                                    Image(systemName: "shippingbox")
-                                        .font(.system(size: 17, weight: .semibold))
-                                        .foregroundStyle(AppTheme.primaryBlue)
+                                    Color.clear
                                 )
 
                             VStack(alignment: .leading, spacing: 4) {
@@ -159,6 +145,7 @@ struct HomeView: View {
 
                             StatusBadge(status: requisition.statusDisplay)
                         }
+                        .padding(.vertical, 4)
                     }
                 }
             }

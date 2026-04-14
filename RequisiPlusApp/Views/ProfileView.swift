@@ -18,7 +18,7 @@ struct ProfileView: View {
     private var identityCard: some View {
         PrimaryCard {
             HStack(spacing: 16) {
-                Circle()
+                Rectangle()
                     .fill(
                         LinearGradient(
                             colors: [AppTheme.deepBlue, AppTheme.primaryBlue],
@@ -26,10 +26,10 @@ struct ProfileView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 78, height: 78)
+                    .frame(width: 68, height: 68)
                     .overlay(
                         Image(systemName: "person.fill")
-                            .font(.system(size: 30, weight: .semibold))
+                            .font(.system(size: 26, weight: .semibold))
                             .foregroundStyle(.white)
                     )
 
@@ -73,19 +73,23 @@ struct ProfileView: View {
 
     private func infoRow(icon: String, title: String, value: String) -> some View {
         HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(AppTheme.primaryBlue.opacity(0.10))
-                .frame(width: 36, height: 36)
+            Rectangle()
+                .fill(AppTheme.deepBlue)
+                .frame(width: 4, height: 36)
                 .overlay(
-                    Image(systemName: icon)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(AppTheme.primaryBlue)
+                    Color.clear
                 )
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AppTheme.textMuted)
+                HStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.primaryBlue)
+
+                    Text(title)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textMuted)
+                }
 
                 Text(value)
                     .font(.system(size: 15, weight: .bold))
@@ -107,11 +111,11 @@ struct ProfileView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(.white)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .stroke(Color.red.opacity(0.14), lineWidth: 1)
                 )
         }

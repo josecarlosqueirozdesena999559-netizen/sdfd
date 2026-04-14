@@ -17,18 +17,18 @@ struct ScreenContainer<Content: View>: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 18) {
                 if title.isEmpty == false || (subtitle?.isEmpty == false) {
                     VStack(alignment: .leading, spacing: 6) {
                         if title.isEmpty == false {
                             Text(title)
-                                .font(.system(size: 32, weight: .bold))
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundStyle(AppTheme.textPrimary)
                         }
 
                         if let subtitle, subtitle.isEmpty == false {
                             Text(subtitle)
-                                .font(.system(size: 15, weight: .medium))
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(AppTheme.textMuted)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -38,8 +38,8 @@ struct ScreenContainer<Content: View>: View {
                 content()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
+            .padding(.top, 6)
+            .padding(.bottom, 24)
         }
     }
 }
@@ -62,14 +62,12 @@ struct PrimaryCard<Content: View>: View {
         }
         .padding(padding)
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 20, x: 0, y: 10)
-                .shadow(color: AppTheme.deepBlue.opacity(0.05), radius: 6, x: 0, y: 2)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(AppTheme.fieldBorder.opacity(0.75), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(AppTheme.fieldBorder.opacity(0.9), lineWidth: 1)
         )
     }
 }
@@ -83,9 +81,9 @@ struct CompactMetricCard: View {
         VStack(alignment: .leading, spacing: 12) {
             Image(systemName: systemImage)
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(AppTheme.primaryBlue)
+                .foregroundStyle(.white)
                 .frame(width: 34, height: 34)
-                .background(AppTheme.primaryBlue.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(AppTheme.deepBlue, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
 
             Text(value)
                 .font(.system(size: 26, weight: .bold))
@@ -98,12 +96,12 @@ struct CompactMetricCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color.white.opacity(0.95))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppTheme.fieldBorder.opacity(0.75), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(AppTheme.fieldBorder.opacity(0.9), lineWidth: 1)
         )
     }
 }

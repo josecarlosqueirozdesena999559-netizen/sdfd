@@ -27,9 +27,9 @@ struct RequisitionsView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 54)
-            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(AppTheme.fieldBorder, lineWidth: 1)
             )
 
@@ -44,7 +44,7 @@ struct RequisitionsView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .background(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
                                     .fill(selectedFilter == filter ? AppTheme.deepBlue : AppTheme.primaryBlue.opacity(0.08))
                             )
                     }
@@ -78,15 +78,10 @@ struct RequisitionsView: View {
     }
 
     private func requisitionRow(_ requisition: Requisition) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(AppTheme.primaryBlue.opacity(0.10))
-                .frame(width: 46, height: 46)
-                .overlay(
-                    Image(systemName: "doc.text")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(AppTheme.primaryBlue)
-                )
+            HStack(alignment: .top, spacing: 14) {
+            Rectangle()
+                .fill(AppTheme.deepBlue)
+                .frame(width: 4, height: 44)
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top) {
@@ -114,9 +109,9 @@ struct RequisitionsView: View {
             }
         }
         .padding(16)
-        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(AppTheme.fieldBorder.opacity(0.8), lineWidth: 1)
         )
     }
@@ -182,7 +177,7 @@ struct StatusBadge: View {
             .foregroundStyle(tint)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(tint.opacity(0.12), in: Capsule())
+            .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 
     private var normalized: String {
