@@ -62,11 +62,7 @@ private struct DashboardView: View {
                     unreadNotificationCount: appDataViewModel.unreadNotificationCount,
                     onNotificationsTap: {
                         showingNotifications = true
-                    },
-                    onChatTap: {
-                        selectedSection = .chat
-                    },
-                    showsChatShortcut: availableSections.contains(.chat)
+                    }
                 )
 
                 currentScreen
@@ -210,8 +206,6 @@ private struct MobileHeader: View {
     let title: String
     let unreadNotificationCount: Int
     let onNotificationsTap: () -> Void
-    let onChatTap: () -> Void
-    let showsChatShortcut: Bool
 
     var body: some View {
         HStack {
@@ -227,13 +221,7 @@ private struct MobileHeader: View {
 
             Spacer()
 
-            HStack(spacing: 10) {
-                headerIconButton(systemImage: "bell.badge.fill", badge: unreadNotificationCount, action: onNotificationsTap)
-
-                if showsChatShortcut {
-                    headerIconButton(systemImage: "bubble.left.and.bubble.right.fill", badge: 0, action: onChatTap)
-                }
-            }
+            headerIconButton(systemImage: "bell.badge.fill", badge: unreadNotificationCount, action: onNotificationsTap)
         }
         .padding(.horizontal, 18)
         .padding(.top, 14)
@@ -318,7 +306,7 @@ private struct NotificationsSheet: View {
             ScrollView {
                 VStack(spacing: 12) {
                     if notifications.isEmpty {
-                        PrimaryCard {
+                        SoftPanel {
                             SectionHeader(title: "Sem notificacoes")
                             Text("As novas mensagens e atualizacoes importantes vao aparecer aqui.")
                                 .font(.system(size: 14, weight: .medium))
@@ -332,7 +320,7 @@ private struct NotificationsSheet: View {
                                     await onOpenThread(notification.targetThreadId)
                                 }
                             } label: {
-                                PrimaryCard(padding: 16) {
+                                SoftPanel(padding: 16) {
                                     HStack(alignment: .top, spacing: 12) {
                                         Image(systemName: notification.isRead ? "bell" : "bell.badge.fill")
                                             .font(.system(size: 16, weight: .bold))
