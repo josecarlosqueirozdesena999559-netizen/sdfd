@@ -33,7 +33,7 @@ struct ProfileView: View {
                             .font(.system(size: 24, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
 
-                        Text(appDataViewModel.profile?.funcao ?? "Usuario")
+                        Text(appDataViewModel.profile?.funcao ?? "Usuário")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(AppTheme.textMuted)
 
@@ -46,8 +46,8 @@ struct ProfileView: View {
                 }
 
                 HStack(spacing: 12) {
-                    profilePill(title: "Setor", value: appDataViewModel.profile?.setor ?? "Nao informado")
-                    profilePill(title: "Perfil", value: appDataViewModel.profile?.role ?? "Usuario")
+                    profilePill(title: "Setor", value: appDataViewModel.profile?.setor ?? "Não informado")
+                    profilePill(title: "Perfil", value: appDataViewModel.profile?.role ?? "Usuário")
                 }
             }
         }
@@ -55,12 +55,12 @@ struct ProfileView: View {
 
     private var detailsCard: some View {
         PrimaryCard {
-            SectionHeader(title: "Informacoes da conta", subtitle: "Dados usados para acompanhar suas requisicoes no app.")
+            SectionHeader(title: "Informações da conta", subtitle: "Dados usados para acompanhar suas requisições no app.")
 
             VStack(spacing: 12) {
-                InfoStrip(icon: "building.2", title: "Setor", value: appDataViewModel.profile?.setor ?? "Nao informado")
-                InfoStrip(icon: "person.text.rectangle", title: "Perfil", value: appDataViewModel.profile?.role ?? "Usuario")
-                InfoStrip(icon: "clock", title: "Ultimo acesso", value: authViewModel.lastAccessDescription)
+                InfoStrip(icon: "building.2", title: "Setor", value: appDataViewModel.profile?.setor ?? "Não informado")
+                InfoStrip(icon: "person.text.rectangle", title: "Perfil", value: appDataViewModel.profile?.role ?? "Usuário")
+                InfoStrip(icon: "clock", title: "Último acesso", value: authViewModel.lastAccessDescription)
             }
         }
     }

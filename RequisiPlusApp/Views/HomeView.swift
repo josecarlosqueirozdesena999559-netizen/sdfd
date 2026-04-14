@@ -22,7 +22,7 @@ struct HomeView: View {
                         ProgressView()
                             .tint(AppTheme.primaryBlue)
 
-                        Text("Carregando informacoes do app...")
+                        Text("Carregando informações do app...")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(AppTheme.textMuted)
                     }
@@ -46,7 +46,7 @@ struct HomeView: View {
                 .offset(x: 28, y: -32)
 
             VStack(alignment: .leading, spacing: 18) {
-                Text("Inicio")
+                Text("Início")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.82))
 
@@ -58,7 +58,7 @@ struct HomeView: View {
                     Button {
                         selectedSection = appDataViewModel.summary.pendingCount > 0 ? .verRequisicoes : .fazerRequisicao
                     } label: {
-                        Text(appDataViewModel.summary.pendingCount > 0 ? "Ver requisicoes" : "Fazer requisicao")
+                        Text(appDataViewModel.summary.pendingCount > 0 ? "Ver requisições" : "Fazer requisição")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.deepBlue)
                             .padding(.horizontal, 18)
@@ -87,7 +87,7 @@ struct HomeView: View {
                 )
 
                 CompactMetricCard(
-                    title: "Concluidas",
+                    title: "Concluídas",
                     value: "\(completedCount)",
                     systemImage: "checkmark.circle"
                 )
@@ -97,13 +97,13 @@ struct HomeView: View {
                 InfoStrip(
                     icon: "person.crop.circle",
                     title: "Solicitante",
-                    value: appDataViewModel.profile?.name ?? "Usuario"
+                    value: appDataViewModel.profile?.name ?? "Usuário"
                 )
 
                 InfoStrip(
                     icon: "building.2",
                     title: "Setor",
-                    value: appDataViewModel.profile?.setor ?? "Nao informado"
+                    value: appDataViewModel.profile?.setor ?? "Não informado"
                 )
             }
         }
@@ -112,11 +112,11 @@ struct HomeView: View {
     private var recentRequestsCard: some View {
         PrimaryCard {
             SectionHeader(
-                title: "Requisicoes recentes"
+                title: "Requisições recentes"
             )
 
             if recentRequisitions.isEmpty {
-                Text("Nenhuma requisicao encontrada no momento.")
+                Text("Nenhuma requisição encontrada no momento.")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AppTheme.textMuted)
             } else {
@@ -140,7 +140,7 @@ struct HomeView: View {
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
-                Text("Codigo \(requisition.code)")
+                Text("Código \(requisition.code)")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(AppTheme.primaryBlue)
 
@@ -174,14 +174,14 @@ struct HomeView: View {
 
     private var homeHeadline: String {
         if appDataViewModel.summary.desktopSignatureCount > 0 {
-            return "Voce tem assinaturas pendentes"
+            return "Você tem assinaturas pendentes"
         }
 
         if appDataViewModel.summary.pendingCount == 0 {
-            return "Voce nao tem pendencias"
+            return "Você não tem pendências"
         }
 
-        return "Requisicoes pendentes"
+        return "Requisições pendentes"
     }
 
     private func statusTint(for requisition: Requisition) -> Color {

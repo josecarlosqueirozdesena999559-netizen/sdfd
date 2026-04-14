@@ -61,7 +61,7 @@ enum SecureSessionStoreError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidData:
-            return "Nao foi possivel ler a sessao armazenada."
+            return "Não foi possível ler a sessão armazenada."
         case .unexpectedStatus(let status):
             return "Falha ao acessar o armazenamento seguro (\(status))."
         }

@@ -101,7 +101,7 @@ struct SupabaseAuthService {
 
         guard (200...299).contains(httpResponse.statusCode) else {
             if httpResponse.statusCode == 404 {
-                throw SupabaseAuthError.requestFailed("Endpoint de autenticacao nao encontrado. Revise a URL do projeto Supabase e se o Auth esta habilitado.")
+                throw SupabaseAuthError.requestFailed("Endpoint de autenticação não encontrado. Revise a URL do projeto Supabase e se o Auth está habilitado.")
             }
 
             let message = (try? decoder.decode(AuthErrorResponse.self, from: data).readableMessage)
@@ -113,7 +113,7 @@ struct SupabaseAuthService {
         do {
             return try decoder.decode(Response.self, from: data)
         } catch {
-            throw SupabaseAuthError.requestFailed("Nao foi possivel interpretar a resposta do Supabase.")
+            throw SupabaseAuthError.requestFailed("Não foi possível interpretar a resposta do Supabase.")
         }
     }
 }

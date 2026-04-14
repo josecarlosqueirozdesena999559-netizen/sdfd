@@ -27,7 +27,7 @@ final class AuthViewModel: ObservableObject {
     }
 
     var displayName: String {
-        session?.user.displayName ?? "Usuario"
+        session?.user.displayName ?? "Usuário"
     }
 
     var email: String {

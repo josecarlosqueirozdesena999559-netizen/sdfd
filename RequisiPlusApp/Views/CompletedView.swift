@@ -13,10 +13,10 @@ struct CreateRequisitionView: View {
             if appDataViewModel.materialTypes.isEmpty {
                 PrimaryCard {
                     SectionHeader(
-                        title: "Sem categorias disponiveis"
+                        title: "Sem categorias disponíveis"
                     )
 
-                    Text("Seu usuario nao possui categorias liberadas no momento.")
+                    Text("Seu usuário não possui categorias liberadas no momento.")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textMuted)
                 }
@@ -28,7 +28,7 @@ struct CreateRequisitionView: View {
 
             if let successMessage = appDataViewModel.successMessage {
                 feedbackCard(
-                    title: "Requisicao enviada com sucesso",
+                    title: "Requisição enviada com sucesso",
                     message: successMessage,
                     tint: AppTheme.success,
                     icon: "checkmark.circle.fill"
@@ -37,7 +37,7 @@ struct CreateRequisitionView: View {
 
             if let errorMessage = appDataViewModel.errorMessage, errorMessage.isEmpty == false {
                 feedbackCard(
-                    title: "Nao foi possivel enviar",
+                    title: "Não foi possível enviar",
                     message: errorMessage,
                     tint: .red.opacity(0.82),
                     icon: "exclamationmark.triangle.fill"
@@ -55,7 +55,7 @@ struct CreateRequisitionView: View {
         PrimaryCard {
             SectionHeader(
                 title: "Menu de materiais",
-                subtitle: "Escolha primeiro a categoria. Depois a tabela abre em tela cheia para facilitar a visualizacao."
+                subtitle: "Escolha primeiro a categoria. Depois a tabela abre em tela cheia para facilitar a visualização."
             )
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -131,7 +131,7 @@ struct CreateRequisitionView: View {
         PrimaryCard {
             SectionHeader(
                 title: "Itens de \(shortTitle(for: material))",
-                subtitle: "Visualizacao ampliada para preencher com mais conforto."
+                subtitle: "Visualização ampliada para preencher com mais conforto."
             )
 
             SearchFieldRow(
@@ -144,9 +144,9 @@ struct CreateRequisitionView: View {
             ScrollView {
                 LazyVStack(spacing: 14) {
                     if filteredItems(for: material).isEmpty {
-                        Text("Nao existem itens cadastrados no banco para essa categoria.")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(AppTheme.textMuted)
+                            Text("Não existem itens cadastrados no banco para essa categoria.")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(AppTheme.textMuted)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
                         ForEach(filteredItems(for: material)) { item in
@@ -177,7 +177,7 @@ struct CreateRequisitionView: View {
                             .tint(.white)
                     }
 
-                    Text(appDataViewModel.createInProgress ? "Enviando requisicao..." : "Enviar requisicao")
+                    Text(appDataViewModel.createInProgress ? "Enviando requisição..." : "Enviar requisição")
                         .font(.system(size: 16, weight: .bold))
                 }
                 .foregroundStyle(.white)
@@ -310,9 +310,7 @@ struct CreateRequisitionView: View {
 
     private func shortTitle(for material: MaterialType) -> String {
         material.title
-            .replacingOccurrences(of: "Material de ", with: "")
-            .replacingOccurrences(of: "Insumos de ", with: "")
-            .replacingOccurrences(of: "_", with: " ")
+            .formattedCategoryTitle
     }
 
     private func categoryBackground() -> some View {

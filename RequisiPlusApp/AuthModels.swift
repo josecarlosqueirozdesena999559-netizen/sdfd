@@ -35,7 +35,7 @@ struct SupabaseUser: Codable {
         if let email {
             return email.components(separatedBy: "@").first?.capitalized ?? email
         }
-        return "Usuario"
+        return "Usuário"
     }
 }
 
@@ -93,11 +93,11 @@ struct AuthErrorResponse: Decodable {
     }
 
     var readableMessage: String {
-        let rawMessage = errorDescription ?? msg ?? message ?? error ?? "Nao foi possivel concluir a autenticacao."
+        let rawMessage = errorDescription ?? msg ?? message ?? error ?? "Não foi possível concluir a autenticação."
         let normalized = rawMessage.lowercased()
 
         if normalized.contains("invalid login credentials") {
-            return "E-mail ou senha invalidos."
+            return "E-mail ou senha inválidos."
         }
 
         if normalized.contains("email not confirmed") {
@@ -105,15 +105,15 @@ struct AuthErrorResponse: Decodable {
         }
 
         if normalized == "not found" {
-            return "Login nao encontrado. Verifique se este usuario existe no Supabase Auth e se o projeto configurado esta correto."
+            return "Login não encontrado. Verifique se este usuário existe no Supabase Auth e se o projeto configurado está correto."
         }
 
         if normalized.contains("user not found") {
-            return "Usuario nao encontrado no Supabase Auth."
+            return "Usuário não encontrado no Supabase Auth."
         }
 
         if normalized.contains("invalid api key") || normalized.contains("apikey") {
-            return "Falha de configuracao com a chave do Supabase."
+            return "Falha de configuração com a chave do Supabase."
         }
 
         return rawMessage
@@ -144,7 +144,7 @@ enum JSONValue: Codable {
         } else if let value = try? container.decode([JSONValue].self) {
             self = .array(value)
         } else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Valor JSON nao suportado.")
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Valor JSON não suportado.")
         }
     }
 

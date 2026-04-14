@@ -8,9 +8,9 @@ enum SupabaseDatabaseError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Nao foi possivel montar a URL do banco."
+            return "Não foi possível montar a URL do banco."
         case .invalidResponse:
-            return "Resposta invalida do banco."
+            return "Resposta inválida do banco."
         case .requestFailed(let message):
             return message
         }
@@ -43,7 +43,7 @@ struct SupabaseDatabaseService {
             }
         }
 
-        throw SupabaseDatabaseError.requestFailed("Usuario autenticado nao encontrado na tabela usuarios.")
+        throw SupabaseDatabaseError.requestFailed("Usuário autenticado não encontrado na tabela usuarios.")
     }
 
     func fetchRequisitions(session userSession: UserSession, profile: UserProfile) async throws -> [Requisition] {
@@ -69,6 +69,176 @@ struct SupabaseDatabaseService {
         let path = "/rest/v1/itens?select=id,nome,unidade,categoria,subcategoria&categoria=in.(\(encodedCategories))&order=nome.asc"
         let records: [CatalogItemRecord] = try await perform(path: path, method: "GET", accessToken: userSession.accessToken)
         return records.map { $0.toDomain() }
+    }
+
+    func fetchNotifications(session userSession: UserSession, profile: UserProfile) async throws -> [NotificationItem] {
+        let path = "/rest/v1/user_notifications?select=id,title,body,created_at,is_read,target_thread_id&user_id=eq.\(profile.id)&order=created_at.desc"
+        let records: [NotificationRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
+        return records.map { $0.toDomain() }
+    }
+
+    func fetchAdminContacts(session userSession: UserSession) async throws -> [ChatContact] {
+        let path = "/rest/v1/usuarios?select=id,nome,role,setor&role=ilike.*admin*&order=nome.asc"
+        let records: [ChatContactRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
+        return records.map { $0.toDomain() }
+    }
+
+    func fetchChatThreads(session userSession: UserSession, profile: UserProfile) async throws -> [ChatThread] {
+        let path: String
+
+        if profile.isAdmin {
+            path = "/rest/v1/chat_threads?select=*&order=updated_at.desc"
+        } else {
+            path = "/rest/v1/chat_threads?select=*&requester_user_id=eq.\(profile.id)&order=updated_at.desc"
+        }
+
+        let records: [ChatThreadRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
+        return records.map { $0.toDomain(for: profile) }
+    }
+
+    func fetchChatMessages(session userSession: UserSession, threadId: String) async throws -> [ChatMessage] {
+        let path = "/rest/v1/chat_messages?select=*&thread_id=eq.\(threadId)&order=created_at.asc"
+        let records: [ChatMessageRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
+        return records.map { $0.toDomain() }
+    }
+
+    func ensureChatThread(
+        session userSession: UserSession,
+        profile: UserProfile,
+        adminContact: ChatContact
+    ) async throws -> ChatThread {
+        let path = "/rest/v1/chat_threads?select=*&requester_user_id=eq.\(profile.id)&admin_user_id=eq.\(adminContact.id)&limit=1"
+
+        if let existing: ChatThreadRecord = try await fetchFirstOptional(path: path, accessToken: userSession.accessToken) {
+            return existing.toDomain(for: profile)
+        }
+
+        let payload = NewChatThreadPayload(
+            requesterUserId: profile.id,
+            requesterName: profile.name,
+            requesterRole: profile.role,
+            adminUserId: adminContact.id,
+            adminName: adminContact.name,
+            adminRole: adminContact.role,
+            title: "Atendimento administrativo",
+            lastMessagePreview: "Conversa iniciada"
+        )
+
+        let records: [ChatThreadRecord] = try await perform(
+            path: "/rest/v1/chat_threads?select=*",
+            method: "POST",
+            accessToken: userSession.accessToken,
+            body: payload,
+            preferRepresentation: true
+        )
+
+        guard let thread = records.first else {
+            throw SupabaseDatabaseError.requestFailed("Não foi possível criar a conversa com a administração.")
+        }
+
+        return thread.toDomain(for: profile)
+    }
+
+    func sendChatMessage(
+        session userSession: UserSession,
+        profile: UserProfile,
+        thread: ChatThread,
+        text: String,
+        attachmentUpload: ChatAttachmentUpload?
+    ) async throws -> ChatMessage {
+        let attachment = try await uploadAttachmentIfNeeded(session: userSession, profile: profile, upload: attachmentUpload)
+
+        let payload = NewChatMessagePayload(
+            threadId: thread.id,
+            senderUserId: profile.id,
+            senderName: profile.name,
+            senderRole: profile.role,
+            recipientUserId: thread.counterpartUserId,
+            body: text.trimmingCharacters(in: .whitespacesAndNewlines),
+            attachmentName: attachment?.fileName,
+            attachmentURL: attachment?.fileURL,
+            attachmentMimeType: attachment?.mimeType,
+            attachmentStoragePath: attachment?.storagePath
+        )
+
+        let records: [ChatMessageRecord] = try await perform(
+            path: "/rest/v1/chat_messages?select=*",
+            method: "POST",
+            accessToken: userSession.accessToken,
+            body: payload,
+            preferRepresentation: true
+        )
+
+        guard let message = records.first else {
+            throw SupabaseDatabaseError.requestFailed("Não foi possível enviar a mensagem.")
+        }
+
+        let updatePayload = ChatThreadUpdatePayload(
+            updatedAt: AppDateFormatter.iso8601Basic.string(from: Date()),
+            lastMessagePreview: payload.body.isEmpty ? attachment?.fileName ?? "Áudio enviado" : payload.body
+        )
+
+        let _: [ChatThreadRecord] = try await perform(
+            path: "/rest/v1/chat_threads?id=eq.\(thread.id)&select=*",
+            method: "PATCH",
+            accessToken: userSession.accessToken,
+            body: updatePayload,
+            preferRepresentation: true
+        )
+
+        let notificationPayload = NewNotificationPayload(
+            userId: thread.counterpartUserId,
+            title: "Nova mensagem",
+            body: "\(profile.name) enviou uma nova mensagem.",
+            targetThreadId: thread.id
+        )
+
+        let _: [NotificationRecord] = try await performOptional(
+            path: "/rest/v1/user_notifications?select=id",
+            method: "POST",
+            accessToken: userSession.accessToken,
+            body: notificationPayload,
+            preferRepresentation: true
+        )
+
+        return message.toDomain()
+    }
+
+    func markThreadMessagesAsSeen(
+        session userSession: UserSession,
+        profile: UserProfile,
+        threadId: String
+    ) async throws {
+        let payload = SeenMessagePayload(seenAt: AppDateFormatter.iso8601Basic.string(from: Date()))
+        let _: [ChatMessageRecord] = try await performOptional(
+            path: "/rest/v1/chat_messages?thread_id=eq.\(threadId)&recipient_user_id=eq.\(profile.id)&seen_at=is.null&select=*",
+            method: "PATCH",
+            accessToken: userSession.accessToken,
+            body: payload,
+            preferRepresentation: true
+        )
+    }
+
+    func markNotificationAsRead(session userSession: UserSession, notificationId: String) async throws {
+        let payload = ReadNotificationPayload(isRead: true)
+        let _: [NotificationRecord] = try await performOptional(
+            path: "/rest/v1/user_notifications?id=eq.\(notificationId)&select=id",
+            method: "PATCH",
+            accessToken: userSession.accessToken,
+            body: payload,
+            preferRepresentation: true
+        )
+    }
+
+    func deleteOwnMessage(session userSession: UserSession, messageId: String) async throws {
+        let payload = DeleteMessagePayload(deletedAt: AppDateFormatter.iso8601Basic.string(from: Date()))
+        let _: [ChatMessageRecord] = try await performOptional(
+            path: "/rest/v1/chat_messages?id=eq.\(messageId)&select=*",
+            method: "PATCH",
+            accessToken: userSession.accessToken,
+            body: payload,
+            preferRepresentation: true
+        )
     }
 
     func createRequisition(
@@ -119,7 +289,7 @@ struct SupabaseDatabaseService {
         )
 
         guard let record = records.first else {
-            throw SupabaseDatabaseError.requestFailed("Nao foi possivel confirmar a criacao da requisicao.")
+            throw SupabaseDatabaseError.requestFailed("Não foi possível confirmar a criação da requisição.")
         }
 
         let itemRows = entries.enumerated().map { index, entry in
@@ -163,6 +333,11 @@ struct SupabaseDatabaseService {
         return results.first
     }
 
+    private func fetchFirstOptional<Response: Decodable>(path: String, accessToken: String) async throws -> Response? {
+        let results: [Response] = try await performOptional(path: path, method: "GET", accessToken: accessToken)
+        return results.first
+    }
+
     private func perform<Response: Decodable>(
         path: String,
         method: String,
@@ -175,6 +350,21 @@ struct SupabaseDatabaseService {
             bodyData: nil,
             preferRepresentation: false
         )
+    }
+
+    private func performOptional<Response: Decodable>(
+        path: String,
+        method: String,
+        accessToken: String
+    ) async throws -> Response {
+        do {
+            return try await perform(path: path, method: method, accessToken: accessToken)
+        } catch let error as SupabaseDatabaseError {
+            if case .requestFailed(let message) = error, isMissingRelationMessage(message), let empty = emptyValue(for: Response.self) {
+                return empty
+            }
+            throw error
+        }
     }
 
     private func perform<Response: Decodable, Body: Encodable>(
@@ -192,6 +382,29 @@ struct SupabaseDatabaseService {
             bodyData: bodyData,
             preferRepresentation: preferRepresentation
         )
+    }
+
+    private func performOptional<Response: Decodable, Body: Encodable>(
+        path: String,
+        method: String,
+        accessToken: String,
+        body: Body,
+        preferRepresentation: Bool = false
+    ) async throws -> Response {
+        do {
+            return try await perform(
+                path: path,
+                method: method,
+                accessToken: accessToken,
+                body: body,
+                preferRepresentation: preferRepresentation
+            )
+        } catch let error as SupabaseDatabaseError {
+            if case .requestFailed(let message) = error, isMissingRelationMessage(message), let empty = emptyValue(for: Response.self) {
+                return empty
+            }
+            throw error
+        }
     }
 
     private func performWithRequest<Response: Decodable>(
@@ -233,8 +446,70 @@ struct SupabaseDatabaseService {
         do {
             return try decoder.decode(Response.self, from: data)
         } catch {
-            throw SupabaseDatabaseError.requestFailed("Nao foi possivel interpretar os dados do banco.")
+            throw SupabaseDatabaseError.requestFailed("Não foi possível interpretar os dados do banco.")
         }
+    }
+
+    private func uploadAttachmentIfNeeded(
+        session userSession: UserSession,
+        profile: UserProfile,
+        upload: ChatAttachmentUpload?
+    ) async throws -> ChatAttachment? {
+        guard let upload else {
+            return nil
+        }
+
+        let sanitizedName = upload.fileName.replacingOccurrences(of: " ", with: "_")
+        let filePath = "chat/\(profile.id)/\(UUID().uuidString)-\(sanitizedName)"
+        let encodedPath = filePath.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? filePath
+
+        guard let url = URL(string: "/storage/v1/object/chat-uploads/\(encodedPath)", relativeTo: SupabaseConfig.url) else {
+            throw SupabaseDatabaseError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(SupabaseConfig.publishableKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(userSession.accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue(upload.mimeType, forHTTPHeaderField: "Content-Type")
+        request.setValue("false", forHTTPHeaderField: "x-upsert")
+        request.httpBody = upload.data
+
+        let (_, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw SupabaseDatabaseError.requestFailed("Não foi possível enviar o anexo para o armazenamento.")
+        }
+
+        return ChatAttachment(
+            fileName: upload.fileName,
+            fileURL: "\(SupabaseConfig.url.absoluteString)/storage/v1/object/public/chat-uploads/\(filePath)",
+            mimeType: upload.mimeType,
+            storagePath: filePath
+        )
+    }
+
+    private func emptyValue<Response: Decodable>(for _: Response.Type) -> Response? {
+        if Response.self == [NotificationRecord].self {
+            return [] as? Response
+        }
+        if Response.self == [ChatContactRecord].self {
+            return [] as? Response
+        }
+        if Response.self == [ChatThreadRecord].self {
+            return [] as? Response
+        }
+        if Response.self == [ChatMessageRecord].self {
+            return [] as? Response
+        }
+        return nil
+    }
+
+    private func isMissingRelationMessage(_ message: String) -> Bool {
+        let normalized = message.lowercased()
+        return normalized.contains("relation")
+            || normalized.contains("does not exist")
+            || normalized.contains("could not find")
+            || normalized.contains("404")
     }
 }
 
@@ -313,6 +588,159 @@ private struct CatalogItemRecord: Decodable {
             name: nome,
             unit: unidade,
             subcategory: subcategoria
+        )
+    }
+}
+
+struct ChatAttachmentUpload {
+    let fileName: String
+    let mimeType: String
+    let data: Data
+}
+
+private struct NotificationRecord: Decodable {
+    let id: String
+    let title: String
+    let body: String
+    let createdAt: String?
+    let isRead: Bool?
+    let targetThreadId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case body
+        case createdAt = "created_at"
+        case isRead = "is_read"
+        case targetThreadId = "target_thread_id"
+    }
+
+    func toDomain() -> NotificationItem {
+        NotificationItem(
+            id: id,
+            title: title,
+            body: body,
+            createdAt: AppDateFormatter.parse(dateString: createdAt),
+            isRead: isRead ?? false,
+            targetThreadId: targetThreadId
+        )
+    }
+}
+
+private struct ChatContactRecord: Decodable {
+    let id: String
+    let nome: String
+    let role: String
+    let setor: String?
+
+    func toDomain() -> ChatContact {
+        ChatContact(
+            id: id,
+            name: nome,
+            role: role,
+            setor: setor ?? "Não informado"
+        )
+    }
+}
+
+private struct ChatThreadRecord: Decodable {
+    let id: String
+    let title: String?
+    let requesterUserId: String
+    let requesterName: String
+    let requesterRole: String?
+    let adminUserId: String
+    let adminName: String
+    let adminRole: String?
+    let lastMessagePreview: String?
+    let updatedAt: String?
+    let unreadCount: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case requesterUserId = "requester_user_id"
+        case requesterName = "requester_name"
+        case requesterRole = "requester_role"
+        case adminUserId = "admin_user_id"
+        case adminName = "admin_name"
+        case adminRole = "admin_role"
+        case lastMessagePreview = "last_message_preview"
+        case updatedAt = "updated_at"
+        case unreadCount = "unread_count"
+    }
+
+    func toDomain(for profile: UserProfile) -> ChatThread {
+        let showingAdmin = profile.id == requesterUserId
+        let counterpartName = showingAdmin ? adminName : requesterName
+        let counterpartRole = showingAdmin ? (adminRole ?? "Administrador") : (requesterRole ?? "Usuário")
+        let counterpartUserId = showingAdmin ? adminUserId : requesterUserId
+
+        return ChatThread(
+            id: id,
+            title: title ?? counterpartName,
+            counterpartName: counterpartName,
+            counterpartRole: counterpartRole,
+            counterpartUserId: counterpartUserId,
+            lastMessagePreview: lastMessagePreview ?? "Conversa sem mensagens ainda.",
+            updatedAt: AppDateFormatter.parse(dateString: updatedAt),
+            unreadCount: unreadCount ?? 0
+        )
+    }
+}
+
+private struct ChatMessageRecord: Decodable {
+    let id: String
+    let threadId: String
+    let senderUserId: String
+    let senderName: String
+    let body: String?
+    let createdAt: String?
+    let seenAt: String?
+    let deletedAt: String?
+    let attachmentName: String?
+    let attachmentURL: String?
+    let attachmentMimeType: String?
+    let attachmentStoragePath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case threadId = "thread_id"
+        case senderUserId = "sender_user_id"
+        case senderName = "sender_name"
+        case body
+        case createdAt = "created_at"
+        case seenAt = "seen_at"
+        case deletedAt = "deleted_at"
+        case attachmentName = "attachment_name"
+        case attachmentURL = "attachment_url"
+        case attachmentMimeType = "attachment_mime_type"
+        case attachmentStoragePath = "attachment_storage_path"
+    }
+
+    func toDomain() -> ChatMessage {
+        let attachment: ChatAttachment?
+        if let attachmentName, let attachmentURL, let attachmentMimeType {
+            attachment = ChatAttachment(
+                fileName: attachmentName,
+                fileURL: attachmentURL,
+                mimeType: attachmentMimeType,
+                storagePath: attachmentStoragePath
+            )
+        } else {
+            attachment = nil
+        }
+
+        return ChatMessage(
+            id: id,
+            threadId: threadId,
+            senderUserId: senderUserId,
+            senderName: senderName,
+            text: body ?? "",
+            createdAt: AppDateFormatter.parse(dateString: createdAt),
+            seenAt: AppDateFormatter.parse(dateString: seenAt),
+            deletedAt: AppDateFormatter.parse(dateString: deletedAt),
+            attachment: attachment
         )
     }
 }
@@ -446,6 +874,102 @@ private func numericValue(from rawValue: String) -> Double {
         .trimmingCharacters(in: .whitespacesAndNewlines)
 
     return Double(normalized) ?? 0
+}
+
+private struct NewChatThreadPayload: Encodable {
+    let requesterUserId: String
+    let requesterName: String
+    let requesterRole: String
+    let adminUserId: String
+    let adminName: String
+    let adminRole: String
+    let title: String
+    let lastMessagePreview: String
+
+    enum CodingKeys: String, CodingKey {
+        case requesterUserId = "requester_user_id"
+        case requesterName = "requester_name"
+        case requesterRole = "requester_role"
+        case adminUserId = "admin_user_id"
+        case adminName = "admin_name"
+        case adminRole = "admin_role"
+        case title
+        case lastMessagePreview = "last_message_preview"
+    }
+}
+
+private struct ChatThreadUpdatePayload: Encodable {
+    let updatedAt: String
+    let lastMessagePreview: String
+
+    enum CodingKeys: String, CodingKey {
+        case updatedAt = "updated_at"
+        case lastMessagePreview = "last_message_preview"
+    }
+}
+
+private struct NewChatMessagePayload: Encodable {
+    let threadId: String
+    let senderUserId: String
+    let senderName: String
+    let senderRole: String
+    let recipientUserId: String
+    let body: String
+    let attachmentName: String?
+    let attachmentURL: String?
+    let attachmentMimeType: String?
+    let attachmentStoragePath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case threadId = "thread_id"
+        case senderUserId = "sender_user_id"
+        case senderName = "sender_name"
+        case senderRole = "sender_role"
+        case recipientUserId = "recipient_user_id"
+        case body
+        case attachmentName = "attachment_name"
+        case attachmentURL = "attachment_url"
+        case attachmentMimeType = "attachment_mime_type"
+        case attachmentStoragePath = "attachment_storage_path"
+    }
+}
+
+private struct SeenMessagePayload: Encodable {
+    let seenAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case seenAt = "seen_at"
+    }
+}
+
+private struct DeleteMessagePayload: Encodable {
+    let deletedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case deletedAt = "deleted_at"
+    }
+}
+
+private struct NewNotificationPayload: Encodable {
+    let userId: String
+    let title: String
+    let body: String
+    let targetThreadId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case title
+        case body
+        case targetThreadId = "target_thread_id"
+    }
+}
+
+private struct ReadNotificationPayload: Encodable {
+    let isRead: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case isRead = "is_read"
+    }
 }
 
 private struct RequisitionItemPayload: Encodable {

@@ -1,6 +1,18 @@
 import Foundation
 
 final class SupabaseRealtimeService {
+    struct Subscription {
+        let topic: String
+        let postgresChanges: [PostgresChange]
+    }
+
+    struct PostgresChange {
+        let event: String
+        let schema: String
+        let table: String
+        let filter: String?
+    }
+
     private let urlSession: URLSession
     private var webSocketTask: URLSessionWebSocketTask?
     private var heartbeatTask: Task<Void, Never>?
@@ -10,17 +22,23 @@ final class SupabaseRealtimeService {
 
     private var accessToken: String = ""
     private var userId: String = ""
-    private var onChange: @MainActor () -> Void = {}
+    private var subscriptions: [Subscription] = []
+    private var onChange: @MainActor (String?) -> Void = { _ in }
 
     init(urlSession: URLSession = .shared) {
         self.urlSession = urlSession
     }
 
-    func start(session: UserSession, onChange: @escaping @MainActor () -> Void) {
+    func start(
+        session: UserSession,
+        subscriptions: [Subscription],
+        onChange: @escaping @MainActor (String?) -> Void
+    ) {
         stop()
 
         self.accessToken = session.accessToken
         self.userId = session.user.id
+        self.subscriptions = subscriptions
         self.onChange = onChange
         self.isActive = true
 
@@ -51,46 +69,51 @@ final class SupabaseRealtimeService {
         webSocketTask = task
         task.resume()
 
-        sendJoin()
+        sendJoins()
         listen()
         startHeartbeat()
     }
 
-    private func sendJoin() {
-        let payload = RealtimeMessage(
-            topic: "realtime:materials-sync",
-            event: "phx_join",
-            payload: .object([
-                "config": .object([
-                    "broadcast": .object([
-                        "ack": .bool(false),
-                        "self": .bool(false)
-                    ]),
-                    "presence": .object([
-                        "enabled": .bool(false)
-                    ]),
-                    "postgres_changes": .array([
-                        .object([
-                            "event": .string("*"),
-                            "schema": .string("public"),
-                            "table": .string("itens")
+    private func sendJoins() {
+        for subscription in subscriptions {
+            let joinRef = nextRef()
+            let payload = RealtimeMessage(
+                topic: subscription.topic,
+                event: "phx_join",
+                payload: .object([
+                    "config": .object([
+                        "broadcast": .object([
+                            "ack": .bool(false),
+                            "self": .bool(false)
                         ]),
-                        .object([
-                            "event": .string("*"),
-                            "schema": .string("public"),
-                            "table": .string("usuarios"),
-                            "filter": .string("auth_user_id=eq.\(userId)")
-                        ])
-                    ]),
-                    "private": .bool(false)
-                ]),
-                "access_token": .string(accessToken)
-            ]),
-            ref: nextRef(),
-            joinRef: nextRef()
-        )
+                        "presence": .object([
+                            "enabled": .bool(false)
+                        ]),
+                        "postgres_changes": .array(
+                            subscription.postgresChanges.map { change in
+                                var object: [String: JSONValue] = [
+                                    "event": .string(change.event),
+                                    "schema": .string(change.schema),
+                                    "table": .string(change.table)
+                                ]
 
-        send(message: payload)
+                                if let filter = change.filter {
+                                    object["filter"] = .string(filter)
+                                }
+
+                                return .object(object)
+                            }
+                        ),
+                        "private": .bool(false)
+                    ]),
+                    "access_token": .string(accessToken)
+                ]),
+                ref: nextRef(),
+                joinRef: joinRef
+            )
+
+            send(message: payload)
+        }
     }
 
     private func startHeartbeat() {
@@ -135,9 +158,12 @@ final class SupabaseRealtimeService {
         }
 
         if envelope.event == "postgres_changes" {
+            let changedTable = envelope.payload.objectValue?["data"]?.objectValue?["table"]?.stringValue
             Task { @MainActor in
-                onChange()
+                onChange(changedTable)
             }
+        } else if envelope.event == "phx_error" || envelope.event == "phx_close" {
+            scheduleReconnect()
         }
     }
 
@@ -190,5 +216,14 @@ private struct RealtimeMessage: Codable {
         case payload
         case ref
         case joinRef = "join_ref"
+    }
+}
+
+private extension JSONValue {
+    var objectValue: [String: JSONValue]? {
+        if case .object(let value) = self {
+            return value
+        }
+        return nil
     }
 }

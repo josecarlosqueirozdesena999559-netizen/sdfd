@@ -17,6 +17,7 @@
 		A10000080000000000000001 /* RequisitionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000180000000000000001 /* RequisitionsView.swift */; };
 		A10000090000000000000001 /* CompletedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000190000000000000001 /* CompletedView.swift */; };
 		A100000A0000000000000001 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A0000000000000001 /* ProfileView.swift */; };
+		A100000C0000000000000001 /* MessagingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001D0000000000000001 /* MessagingView.swift */; };
 		A100000B0000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A100001B0000000000000001 /* Assets.xcassets */; };
 		B10000010000000000000001 /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000010000000000000001 /* SupabaseConfig.swift */; };
 		B10000020000000000000001 /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000020000000000000001 /* AuthModels.swift */; };
@@ -43,6 +44,7 @@
 		A100001A0000000000000001 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		A100001B0000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A100001C0000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A100001D0000000000000001 /* MessagingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingView.swift; sourceTree = "<group>"; };
 		C10000010000000000000001 /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseConfig.swift; sourceTree = "<group>"; };
 		C10000020000000000000001 /* AuthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModels.swift; sourceTree = "<group>"; };
 		C10000030000000000000001 /* SupabaseAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseAuthService.swift; sourceTree = "<group>"; };
@@ -120,6 +122,7 @@
 				A10000180000000000000001 /* RequisitionsView.swift */,
 				A10000190000000000000001 /* CompletedView.swift */,
 				A100001A0000000000000001 /* ProfileView.swift */,
+				A100001D0000000000000001 /* MessagingView.swift */,
 				C10000040000000000000001 /* LoginView.swift */,
 			);
 			path = Views;
@@ -204,6 +207,7 @@
 				A10000080000000000000001 /* RequisitionsView.swift in Sources */,
 				A10000090000000000000001 /* CompletedView.swift in Sources */,
 				A100000A0000000000000001 /* ProfileView.swift in Sources */,
+				A100000C0000000000000001 /* MessagingView.swift in Sources */,
 				B10000010000000000000001 /* SupabaseConfig.swift in Sources */,
 				B10000020000000000000001 /* AuthModels.swift in Sources */,
 				B10000030000000000000001 /* SupabaseAuthService.swift in Sources */,

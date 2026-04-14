@@ -65,6 +65,64 @@ struct UserProfile {
     let categoriasPermitidas: [String]
 }
 
+struct NotificationItem: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let body: String
+    let createdAt: Date?
+    let isRead: Bool
+    let targetThreadId: String?
+}
+
+struct ChatContact: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let role: String
+    let setor: String
+
+    var isAdmin: Bool {
+        role.normalizedSearchText.contains("admin")
+    }
+}
+
+struct ChatThread: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let counterpartName: String
+    let counterpartRole: String
+    let counterpartUserId: String
+    let lastMessagePreview: String
+    let updatedAt: Date?
+    let unreadCount: Int
+}
+
+struct ChatAttachment: Hashable {
+    let fileName: String
+    let fileURL: String
+    let mimeType: String
+    let storagePath: String?
+
+    var isAudio: Bool {
+        mimeType.hasPrefix("audio/")
+    }
+}
+
+struct ChatMessage: Identifiable, Hashable {
+    let id: String
+    let threadId: String
+    let senderUserId: String
+    let senderName: String
+    let text: String
+    let createdAt: Date?
+    let seenAt: Date?
+    let deletedAt: Date?
+    let attachment: ChatAttachment?
+
+    var isDeleted: Bool {
+        deletedAt != nil
+    }
+}
+
 struct DashboardSummary {
     let pendingCount: Int
     let conferenceCount: Int
@@ -89,9 +147,7 @@ extension Requisition {
 
 extension MaterialType {
     static func fromCategory(_ category: String) -> MaterialType {
-        let formattedTitle = category
-            .replacingOccurrences(of: "_", with: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let formattedTitle = category.formattedCategoryTitle
 
         return MaterialType(
             id: category,
@@ -105,5 +161,56 @@ extension String {
     var normalizedSearchText: String {
         folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var formattedCategoryTitle: String {
+        replacingOccurrences(of: "_", with: " ")
+            .replacingOccurrences(of: "limpeza alimenticio", with: "Limpeza e Alimentício", options: [.caseInsensitive])
+            .replacingOccurrences(of: "material de ", with: "", options: [.caseInsensitive])
+            .replacingOccurrences(of: "insumos de ", with: "", options: [.caseInsensitive])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .localizedCapitalized
+    }
+}
+
+extension UserProfile {
+    var isAdmin: Bool {
+        role.normalizedSearchText.contains("admin")
+    }
+}
+
+extension Date {
+    var shortBrazilianDateTime: String {
+        AppDateFormatter.shortDateTime.string(from: self)
+    }
+}
+
+enum AppDateFormatter {
+    static let iso8601WithFractionalSeconds: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    static let iso8601Basic: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    static let shortDateTime: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "dd/MM/yyyy 'às' HH:mm"
+        return formatter
+    }()
+
+    static func parse(dateString: String?) -> Date? {
+        guard let dateString, dateString.isEmpty == false else {
+            return nil
+        }
+
+        return iso8601WithFractionalSeconds.date(from: dateString)
+            ?? iso8601Basic.date(from: dateString)
     }
 }

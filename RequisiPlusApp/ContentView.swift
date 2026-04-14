@@ -1,9 +1,10 @@
 import SwiftUI
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case inicio = "Inicio"
-    case fazerRequisicao = "Fazer requisicao"
-    case verRequisicoes = "Ver requisicoes"
+    case inicio = "Início"
+    case fazerRequisicao = "Fazer requisição"
+    case verRequisicoes = "Ver requisições"
+    case chat = "Chat"
     case perfil = "Perfil"
 
     var id: String { rawValue }
@@ -13,6 +14,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .inicio: return "house.fill"
         case .fazerRequisicao: return "square.and.pencil"
         case .verRequisicoes: return "doc.text.fill"
+        case .chat: return "bubble.left.and.bubble.right.fill"
         case .perfil: return "person.crop.circle.fill"
         }
     }
@@ -37,6 +39,7 @@ struct ContentView: View {
 private struct DashboardView: View {
     @StateObject private var appDataViewModel: AppDataViewModel
     @State private var selectedSection: AppSection = .inicio
+    @State private var showingNotifications = false
 
     init(session: UserSession) {
         _appDataViewModel = StateObject(wrappedValue: AppDataViewModel(userSession: session))
@@ -47,7 +50,16 @@ private struct DashboardView: View {
             AppTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                MobileHeader(title: selectedSection.headerTitle)
+                MobileHeader(
+                    title: selectedSection.headerTitle,
+                    unreadNotificationCount: appDataViewModel.unreadNotificationCount,
+                    onNotificationsTap: {
+                        showingNotifications = true
+                    },
+                    onChatTap: {
+                        selectedSection = .chat
+                    }
+                )
 
                 currentScreen
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -62,7 +74,24 @@ private struct DashboardView: View {
         .task {
             if appDataViewModel.profile == nil && appDataViewModel.isLoading == false {
                 await appDataViewModel.load()
+                await appDataViewModel.ensureDefaultAdminThread()
             }
+        }
+        .sheet(isPresented: $showingNotifications) {
+            NotificationsSheet(
+                notifications: appDataViewModel.notifications,
+                onOpenThread: { threadId in
+                    showingNotifications = false
+                    selectedSection = .chat
+                    if let threadId {
+                        try? await appDataViewModel.loadMessages(for: threadId)
+                    }
+                },
+                onMarkAsRead: { notification in
+                    await appDataViewModel.markNotificationAsRead(notification)
+                }
+            )
+            .presentationDetents([.medium, .large])
         }
         .environmentObject(appDataViewModel)
     }
@@ -76,6 +105,8 @@ private struct DashboardView: View {
             CreateRequisitionView()
         case .verRequisicoes:
             RequisitionsView()
+        case .chat:
+            MessagingView()
         case .perfil:
             ProfileView()
         }
@@ -92,7 +123,7 @@ private struct SessionLoadingView: View {
                     .tint(AppTheme.deepBlue)
                     .scaleEffect(1.2)
 
-                Text("Validando sua sessao...")
+                Text("Validando sua sessão...")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppTheme.deepBlue)
             }
@@ -102,6 +133,9 @@ private struct SessionLoadingView: View {
 
 private struct MobileHeader: View {
     let title: String
+    let unreadNotificationCount: Int
+    let onNotificationsTap: () -> Void
+    let onChatTap: () -> Void
 
     var body: some View {
         HStack {
@@ -116,6 +150,11 @@ private struct MobileHeader: View {
             }
 
             Spacer()
+
+            HStack(spacing: 10) {
+                headerIconButton(systemImage: "bell.badge.fill", badge: unreadNotificationCount, action: onNotificationsTap)
+                headerIconButton(systemImage: "bubble.left.and.bubble.right.fill", badge: 0, action: onChatTap)
+            }
         }
         .padding(.horizontal, 18)
         .padding(.top, 14)
@@ -125,17 +164,41 @@ private struct MobileHeader: View {
             .ignoresSafeArea(edges: .top)
         )
     }
+
+    private func headerIconButton(systemImage: String, badge: Int, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(AppTheme.deepBlue)
+                    .frame(width: 44, height: 44)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                if badge > 0 {
+                    Text("\(min(badge, 9))")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 20, height: 20)
+                        .background(AppTheme.danger, in: Circle())
+                        .offset(x: 6, y: -6)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
 }
 
 extension AppSection {
     var headerTitle: String {
         switch self {
         case .inicio:
-            return "Inicio"
+            return "Início"
         case .fazerRequisicao:
-            return "Fazer requisicao"
+            return "Fazer requisição"
         case .verRequisicoes:
-            return "Requisicoes"
+            return "Requisições"
+        case .chat:
+            return "Chat"
         case .perfil:
             return "Perfil"
         }
@@ -144,13 +207,85 @@ extension AppSection {
     var tabTitle: String {
         switch self {
         case .inicio:
-            return "Inicio"
+            return "Início"
         case .fazerRequisicao:
-            return "Fazer requisicao"
+            return "Requisição"
         case .verRequisicoes:
-            return "Requisicoes"
+            return "Requisições"
+        case .chat:
+            return "Chat"
         case .perfil:
             return "Perfil"
+        }
+    }
+}
+
+private struct NotificationsSheet: View {
+    let notifications: [NotificationItem]
+    let onOpenThread: (String?) async -> Void
+    let onMarkAsRead: (NotificationItem) async -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 12) {
+                    if notifications.isEmpty {
+                        PrimaryCard {
+                            SectionHeader(title: "Sem notificações")
+                            Text("As novas mensagens e atualizações importantes vão aparecer aqui.")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(AppTheme.textMuted)
+                        }
+                    } else {
+                        ForEach(notifications) { notification in
+                            Button {
+                                Task {
+                                    await onMarkAsRead(notification)
+                                    await onOpenThread(notification.targetThreadId)
+                                }
+                            } label: {
+                                PrimaryCard(padding: 16) {
+                                    HStack(alignment: .top, spacing: 12) {
+                                        Image(systemName: notification.isRead ? "bell" : "bell.badge.fill")
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundStyle(notification.isRead ? AppTheme.textMuted : AppTheme.deepBlue)
+
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Text(notification.title)
+                                                .font(.system(size: 16, weight: .bold))
+                                                .foregroundStyle(AppTheme.textPrimary)
+
+                                            Text(notification.body)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundStyle(AppTheme.textMuted)
+
+                                            if let createdAt = notification.createdAt {
+                                                Text(createdAt.shortBrazilianDateTime)
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundStyle(AppTheme.primaryBlue)
+                                            }
+                                        }
+
+                                        Spacer()
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(16)
+            }
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationTitle("Notificações")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fechar") {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }

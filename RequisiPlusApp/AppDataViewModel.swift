@@ -7,8 +7,14 @@ final class AppDataViewModel: ObservableObject {
     @Published private(set) var summary: DashboardSummary = .empty
     @Published private(set) var materialTypes: [MaterialType] = []
     @Published private(set) var catalogItems: [MaterialCatalogItem] = []
+    @Published private(set) var notifications: [NotificationItem] = []
+    @Published private(set) var adminContacts: [ChatContact] = []
+    @Published private(set) var chatThreads: [ChatThread] = []
+    @Published private(set) var activeChatMessages: [ChatMessage] = []
+    @Published private(set) var activeThreadId: String?
     @Published var isLoading = false
     @Published var createInProgress = false
+    @Published var chatSendInProgress = false
     @Published var errorMessage: String?
     @Published var successMessage: String?
 
@@ -25,9 +31,12 @@ final class AppDataViewModel: ObservableObject {
         self.databaseService = databaseService
         self.realtimeService = realtimeService
 
-        self.realtimeService.start(session: userSession) { [weak self] in
+        self.realtimeService.start(
+            session: userSession,
+            subscriptions: Self.realtimeSubscriptions(for: userSession.user.id)
+        ) { [weak self] table in
             Task {
-                await self?.refreshFromRealtime()
+                await self?.refreshFromRealtime(changedTable: table)
             }
         }
     }
@@ -35,17 +44,21 @@ final class AppDataViewModel: ObservableObject {
     var dashboardAlert: DashboardAlert {
         DashboardAlert(
             title: summary.pendingCount > 0
-                ? "Voce tem requisicoes pendentes."
-                : "Sem pendencias no momento.",
+                ? "Você tem requisições pendentes."
+                : "Sem pendências no momento.",
             message: summary.pendingCount > 0
-                ? "Abra a aba de requisicoes para acompanhar o status e conferir os detalhes."
-                : "Suas requisicoes estao em dia. Voce pode abrir uma nova requisicao quando precisar.",
-            actionTitle: summary.pendingCount > 0 ? "Ver requisicoes" : "Fazer requisicao"
+                ? "Abra a aba de requisições para acompanhar o status e conferir os detalhes."
+                : "Suas requisições estão em dia. Você pode abrir uma nova requisição quando precisar.",
+            actionTitle: summary.pendingCount > 0 ? "Ver requisições" : "Fazer requisição"
         )
     }
 
     func load() async {
         await performLoad(showLoading: true)
+    }
+
+    var unreadNotificationCount: Int {
+        notifications.filter { $0.isRead == false }.count
     }
 
     private func performLoad(showLoading: Bool) async {
@@ -56,15 +69,28 @@ final class AppDataViewModel: ObservableObject {
             let profile = try await databaseService.fetchUserProfile(session: userSession)
             async let requisitionsTask = databaseService.fetchRequisitions(session: userSession, profile: profile)
             async let catalogItemsTask = databaseService.fetchCatalogItems(session: userSession, categories: profile.categoriasPermitidas)
+            async let notificationsTask = databaseService.fetchNotifications(session: userSession, profile: profile)
+            async let adminContactsTask = databaseService.fetchAdminContacts(session: userSession)
+            async let chatThreadsTask = databaseService.fetchChatThreads(session: userSession, profile: profile)
             let requisitions = try await requisitionsTask
             let catalogItems = try await catalogItemsTask
+            let notifications = try await notificationsTask
+            let adminContacts = try await adminContactsTask
+            let chatThreads = try await chatThreadsTask
 
             self.profile = profile
             self.requisitions = requisitions
             self.summary = Self.makeSummary(from: requisitions)
             self.materialTypes = profile.categoriasPermitidas.map(MaterialType.fromCategory)
             self.catalogItems = catalogItems
+            self.notifications = notifications
+            self.adminContacts = adminContacts
+            self.chatThreads = chatThreads
             self.errorMessage = nil
+
+            if let activeThreadId {
+                try? await loadMessages(for: activeThreadId)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -80,7 +106,7 @@ final class AppDataViewModel: ObservableObject {
         observation: String
     ) async {
         guard let profile, let materialType else {
-            errorMessage = "Nao foi possivel identificar o usuario ou a categoria para criar a requisicao."
+            errorMessage = "Não foi possível identificar o usuário ou a categoria para criar a requisição."
             return
         }
 
@@ -101,8 +127,91 @@ final class AppDataViewModel: ObservableObject {
                 observation: observation.trimmingCharacters(in: .whitespacesAndNewlines)
             )
 
-            successMessage = "Requisicao enviada com sucesso."
+            successMessage = "Requisição enviada com sucesso."
             await load()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadMessages(for threadId: String) async throws {
+        activeThreadId = threadId
+        activeChatMessages = try await databaseService.fetchChatMessages(session: userSession, threadId: threadId)
+
+        if let profile {
+            try? await databaseService.markThreadMessagesAsSeen(session: userSession, profile: profile, threadId: threadId)
+        }
+    }
+
+    func ensureDefaultAdminThread() async {
+        guard let profile, profile.isAdmin == false, chatThreads.isEmpty, let adminContact = adminContacts.first else {
+            return
+        }
+
+        do {
+            let thread = try await databaseService.ensureChatThread(
+                session: userSession,
+                profile: profile,
+                adminContact: adminContact
+            )
+            chatThreads = [thread]
+            try await loadMessages(for: thread.id)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func sendChatMessage(
+        thread: ChatThread,
+        text: String,
+        attachmentUpload: ChatAttachmentUpload?
+    ) async {
+        guard let profile else {
+            return
+        }
+
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedText.isEmpty == false || attachmentUpload != nil else {
+            return
+        }
+
+        chatSendInProgress = true
+        defer {
+            chatSendInProgress = false
+        }
+
+        do {
+            _ = try await databaseService.sendChatMessage(
+                session: userSession,
+                profile: profile,
+                thread: thread,
+                text: trimmedText,
+                attachmentUpload: attachmentUpload
+            )
+
+            try await loadMessages(for: thread.id)
+            await refreshSupplementaryData()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func deleteOwnMessage(_ message: ChatMessage) async {
+        do {
+            try await databaseService.deleteOwnMessage(session: userSession, messageId: message.id)
+            if let activeThreadId {
+                try await loadMessages(for: activeThreadId)
+            }
+            await refreshSupplementaryData()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func markNotificationAsRead(_ notification: NotificationItem) async {
+        do {
+            try await databaseService.markNotificationAsRead(session: userSession, notificationId: notification.id)
+            await refreshSupplementaryData()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -118,12 +227,62 @@ final class AppDataViewModel: ObservableObject {
         )
     }
 
-    private func refreshFromRealtime() async {
+    private func refreshFromRealtime(changedTable: String?) async {
         guard createInProgress == false else { return }
-        await performLoad(showLoading: false)
+
+        switch changedTable {
+        case "chat_messages", "chat_threads", "user_notifications":
+            await refreshSupplementaryData()
+            if let activeThreadId {
+                try? await loadMessages(for: activeThreadId)
+            }
+        default:
+            await performLoad(showLoading: false)
+        }
     }
 
     deinit {
         realtimeService.stop()
+    }
+
+    private func refreshSupplementaryData() async {
+        guard let profile else { return }
+
+        async let notificationsTask = databaseService.fetchNotifications(session: userSession, profile: profile)
+        async let threadsTask = databaseService.fetchChatThreads(session: userSession, profile: profile)
+        async let contactsTask = databaseService.fetchAdminContacts(session: userSession)
+
+        if let notifications = try? await notificationsTask {
+            self.notifications = notifications
+        }
+
+        if let chatThreads = try? await threadsTask {
+            self.chatThreads = chatThreads
+        }
+
+        if let contacts = try? await contactsTask {
+            self.adminContacts = contacts
+        }
+    }
+
+    private static func realtimeSubscriptions(for authUserId: String) -> [SupabaseRealtimeService.Subscription] {
+        [
+            SupabaseRealtimeService.Subscription(
+                topic: "realtime:app-data",
+                postgresChanges: [
+                    .init(event: "*", schema: "public", table: "itens", filter: nil),
+                    .init(event: "*", schema: "public", table: "usuarios", filter: "auth_user_id=eq.\(authUserId)"),
+                    .init(event: "*", schema: "public", table: "requisicoes", filter: nil)
+                ]
+            ),
+            SupabaseRealtimeService.Subscription(
+                topic: "realtime:chat-data",
+                postgresChanges: [
+                    .init(event: "*", schema: "public", table: "chat_threads", filter: nil),
+                    .init(event: "*", schema: "public", table: "chat_messages", filter: nil),
+                    .init(event: "*", schema: "public", table: "user_notifications", filter: nil)
+                ]
+            )
+        ]
     }
 }

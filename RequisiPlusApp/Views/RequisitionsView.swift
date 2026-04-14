@@ -28,7 +28,7 @@ struct RequisitionsView: View {
             )
 
             SmallSummaryCard(
-                title: "Concluidas",
+                title: "Concluídas",
                 value: "\(completedCount)",
                 icon: "checkmark.circle"
             )
@@ -37,10 +37,10 @@ struct RequisitionsView: View {
 
     private var searchCard: some View {
         PrimaryCard {
-            SectionHeader(title: "Requisicoes", subtitle: "Pesquise por codigo, categoria ou status e filtre rapidamente o resultado.")
+            SectionHeader(title: "Requisições", subtitle: "Pesquise por código, categoria ou status e filtre rapidamente o resultado.")
 
             SearchFieldRow(
-                prompt: "Buscar por codigo, categoria ou status",
+                prompt: "Buscar por código, categoria ou status",
                 text: $searchText
             )
 
@@ -62,7 +62,7 @@ struct RequisitionsView: View {
             )
 
             if filteredRequisitions.isEmpty {
-                Text("Nenhuma requisicao encontrada.")
+                Text("Nenhuma requisição encontrada.")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textMuted)
             } else {
@@ -199,7 +199,7 @@ private enum RequestFilter: String, CaseIterable, Identifiable {
         case .pending:
             return "Pendentes"
         case .done:
-            return "Concluidas"
+            return "Concluídas"
         }
     }
 
