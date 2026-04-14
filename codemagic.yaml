@@ -3,7 +3,7 @@ workflows:
     name: iOS Release
     max_build_duration: 60
     integrations:
-      app_store_connect: codemagic
+      app_store_connect: "Codemagic Apple"
     environment:
       xcode: latest
       ios_signing:
