@@ -6,6 +6,7 @@ final class AppDataViewModel: ObservableObject {
     @Published private(set) var requisitions: [Requisition] = []
     @Published private(set) var summary: DashboardSummary = .empty
     @Published private(set) var materialTypes: [MaterialType] = MockData.materialTypes
+    @Published private(set) var catalogItems: [MaterialCatalogItem] = MockData.catalogItems
     @Published var isLoading = false
     @Published var createInProgress = false
     @Published var errorMessage: String?
@@ -52,6 +53,7 @@ final class AppDataViewModel: ObservableObject {
             self.materialTypes = profile.categoriasPermitidas.isEmpty
                 ? MockData.materialTypes
                 : profile.categoriasPermitidas.map(MaterialType.fromCategory)
+            self.catalogItems = Self.filteredCatalogItems(for: self.materialTypes)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -59,8 +61,7 @@ final class AppDataViewModel: ObservableObject {
 
     func createRequisition(
         materialType: MaterialType?,
-        currentBalance: String,
-        requestedBalance: String,
+        entries: [RequestedItemEntry],
         observation: String
     ) async {
         guard let profile, let materialType else {
@@ -81,8 +82,7 @@ final class AppDataViewModel: ObservableObject {
                 session: userSession,
                 profile: profile,
                 materialType: materialType,
-                currentBalance: currentBalance.trimmingCharacters(in: .whitespacesAndNewlines),
-                requestedBalance: requestedBalance.trimmingCharacters(in: .whitespacesAndNewlines),
+                entries: entries,
                 observation: observation.trimmingCharacters(in: .whitespacesAndNewlines)
             )
 
@@ -101,5 +101,11 @@ final class AppDataViewModel: ObservableObject {
             }.count,
             desktopSignatureCount: requisitions.filter(\.requiresDesktopSignature).count
         )
+    }
+
+    private static func filteredCatalogItems(for materialTypes: [MaterialType]) -> [MaterialCatalogItem] {
+        let ids = Set(materialTypes.map(\.id))
+        let filtered = MockData.catalogItems.filter { ids.contains($0.categoryId) }
+        return filtered.isEmpty ? MockData.catalogItems : filtered
     }
 }

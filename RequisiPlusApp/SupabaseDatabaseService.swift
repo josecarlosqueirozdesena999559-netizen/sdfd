@@ -60,14 +60,12 @@ struct SupabaseDatabaseService {
         session userSession: UserSession,
         profile: UserProfile,
         materialType: MaterialType,
-        currentBalance: String,
-        requestedBalance: String,
+        entries: [RequestedItemEntry],
         observation: String
     ) async throws -> Requisition {
-        let itemDetails = [
-            currentBalance.isEmpty ? nil : "Saldo atual: \(currentBalance)",
-            requestedBalance.isEmpty ? nil : "Saldo necessario: \(requestedBalance)"
-        ].compactMap { $0 }
+        let itemDetails = entries.map {
+            "\($0.item.name) | saldo_atual: \($0.currentBalance) | quantidade: \($0.requestedQuantity)"
+        }
 
         let payload = NewRequisitionPayload(
             setor: profile.setor,
@@ -80,8 +78,7 @@ struct SupabaseDatabaseService {
             solicitanteFuncao: profile.funcao,
             devolucaoMotivo: buildObservation(
                 observation: observation,
-                currentBalance: currentBalance,
-                requestedBalance: requestedBalance
+                entries: entries
             )
         )
 
@@ -180,12 +177,14 @@ struct SupabaseDatabaseService {
     }
 }
 
-private func buildObservation(observation: String, currentBalance: String, requestedBalance: String) -> String? {
-    let parts = [
-        currentBalance.isEmpty ? nil : "Saldo atual: \(currentBalance)",
-        requestedBalance.isEmpty ? nil : "Saldo necessario: \(requestedBalance)",
-        observation.isEmpty ? nil : "Observacao: \(observation)"
-    ].compactMap { $0 }
+private func buildObservation(observation: String, entries: [RequestedItemEntry]) -> String? {
+    var parts = entries.map {
+        "\($0.item.name) (saldo_atual: \($0.currentBalance), quantidade: \($0.requestedQuantity))"
+    }
+
+    if observation.isEmpty == false {
+        parts.append("Observacao: \(observation)")
+    }
 
     guard parts.isEmpty == false else {
         return nil

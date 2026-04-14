@@ -132,7 +132,7 @@ extension AppSection {
         case .fazerRequisicao:
             return "Requisicao"
         case .verRequisicoes:
-            return "Historico"
+            return "Requisicoes"
         case .perfil:
             return "Perfil"
         }
