@@ -6,27 +6,44 @@ struct RequisitionsView: View {
     @State private var selectedFilter: RequestFilter = .all
 
     var body: some View {
-        ScreenContainer(
-            title: "",
-            subtitle: ""
-        ) {
+        ScreenContainer(title: "", subtitle: "") {
+            summaryCard
             searchCard
             listCard
         }
     }
 
+    private var summaryCard: some View {
+        HStack(spacing: 12) {
+            SmallSummaryCard(
+                title: "Total",
+                value: "\(appDataViewModel.requisitions.count)",
+                icon: "doc.text"
+            )
+
+            SmallSummaryCard(
+                title: "Pendentes",
+                value: "\(pendingCount)",
+                icon: "clock"
+            )
+
+            SmallSummaryCard(
+                title: "Concluidas",
+                value: "\(completedCount)",
+                icon: "checkmark.circle"
+            )
+        }
+    }
+
     private var searchCard: some View {
         PrimaryCard {
-            SectionHeader(
-                title: "Historico de requisicoes",
-                subtitle: "Busque por material, codigo ou status para localizar um pedido."
-            )
+            SectionHeader(title: "Requisicoes")
 
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(AppTheme.textMuted)
 
-                TextField("Buscar por material, codigo ou status", text: $searchText)
+                TextField("Buscar por numero, categoria ou status", text: $searchText)
                     .foregroundStyle(AppTheme.textPrimary)
                     .tint(AppTheme.deepBlue)
             }
@@ -40,20 +57,7 @@ struct RequisitionsView: View {
 
             HStack(spacing: 10) {
                 ForEach(RequestFilter.allCases) { filter in
-                    Button {
-                        selectedFilter = filter
-                    } label: {
-                        Text(filter.title)
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(selectedFilter == filter ? .white : AppTheme.deepBlue)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 999, style: .continuous)
-                                    .fill(selectedFilter == filter ? AppTheme.deepBlue : AppTheme.primaryBlue.opacity(0.08))
-                            )
-                    }
-                    .buttonStyle(.plain)
+                    filterChip(filter)
                 }
 
                 Spacer()
@@ -63,13 +67,8 @@ struct RequisitionsView: View {
 
     private var listCard: some View {
         PrimaryCard {
-            SectionHeader(
-                title: "Resultados",
-                subtitle: filteredRequisitions.isEmpty ? "Nenhuma requisicao encontrada." : "\(filteredRequisitions.count) resultado(s) encontrado(s)."
-            )
-
             if filteredRequisitions.isEmpty {
-                Text("Ajuste sua busca ou envie uma nova requisicao para comecar.")
+                Text("Nenhuma requisicao encontrada.")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textMuted)
             } else {
@@ -82,35 +81,53 @@ struct RequisitionsView: View {
         }
     }
 
+    private func filterChip(_ filter: RequestFilter) -> some View {
+        Button {
+            selectedFilter = filter
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: filter.icon)
+                    .font(.system(size: 12, weight: .bold))
+
+                Text(filter.title)
+                    .font(.system(size: 13, weight: .bold))
+            }
+            .foregroundStyle(selectedFilter == filter ? .white : AppTheme.deepBlue)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(selectedFilter == filter ? AppTheme.deepBlue : AppTheme.primaryBlue.opacity(0.08))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
     private func requisitionRow(_ requisition: Requisition) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(AppTheme.deepBlue)
-                .frame(width: 5, height: 52)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(statusColor(for: requisition))
+                    .frame(width: 6, height: 54)
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(requisition.materialType)
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(requisition.code)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(AppTheme.deepBlue)
 
-                        Text(requisition.code)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(AppTheme.textMuted)
-                    }
-
-                    Spacer()
-
-                    StatusBadge(status: requisition.statusDisplay)
+                    Text(requisition.materialType.capitalized)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
                 }
 
-                HStack(spacing: 14) {
-                    Label(requisition.date, systemImage: "calendar")
-                    Label(requisition.sector, systemImage: "shippingbox")
-                }
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(AppTheme.textMuted)
+                Spacer()
+
+                StatusBadge(status: requisition.statusDisplay)
+            }
+
+            HStack(spacing: 14) {
+                rowMeta(icon: "calendar", text: requisition.date)
+                rowMeta(icon: "building.2", text: requisition.sector)
             }
         }
         .padding(16)
@@ -119,6 +136,27 @@ struct RequisitionsView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AppTheme.fieldBorder.opacity(0.8), lineWidth: 1)
         )
+    }
+
+    private func rowMeta(icon: String, text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+            Text(text)
+                .lineLimit(1)
+        }
+        .font(.system(size: 12, weight: .medium))
+        .foregroundStyle(AppTheme.textMuted)
+    }
+
+    private func statusColor(for requisition: Requisition) -> Color {
+        let status = requisition.normalizedStatus
+        if status.contains("conclu") || status.contains("finaliz") || status.contains("entreg") {
+            return AppTheme.success
+        }
+        if status.contains("assin") {
+            return AppTheme.warning
+        }
+        return AppTheme.primaryBlue
     }
 
     private var filteredRequisitions: [Requisition] {
@@ -138,6 +176,14 @@ struct RequisitionsView: View {
 
             return matchesFilter && matchesSearch
         }
+    }
+
+    private var pendingCount: Int {
+        appDataViewModel.requisitions.filter { RequestFilter.pending.matches(requisition: $0) }.count
+    }
+
+    private var completedCount: Int {
+        appDataViewModel.requisitions.filter { RequestFilter.done.matches(requisition: $0) }.count
     }
 }
 
@@ -159,17 +205,66 @@ private enum RequestFilter: String, CaseIterable, Identifiable {
         }
     }
 
+    var icon: String {
+        switch self {
+        case .all:
+            return "line.3.horizontal.decrease.circle"
+        case .pending:
+            return "clock.fill"
+        case .done:
+            return "checkmark.circle.fill"
+        }
+    }
+
     func matches(requisition: Requisition) -> Bool {
         switch self {
         case .all:
             return true
         case .pending:
             let status = requisition.normalizedStatus
-            return status.contains("pendente") || status.contains("andamento") || status.contains("conferencia")
+            return status.contains("pendente")
+                || status.contains("andamento")
+                || status.contains("conferencia")
+                || status.contains("assin")
+                || status.contains("recebido")
         case .done:
             let status = requisition.normalizedStatus
             return status.contains("conclu") || status.contains("finaliz") || status.contains("entreg")
         }
+    }
+}
+
+private struct SmallSummaryCard: View {
+    let title: String
+    let value: String
+    let icon: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppTheme.deepBlue)
+                .frame(width: 32, height: 32)
+                .background(AppTheme.skyBlue, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            Text(value)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(AppTheme.textMuted)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AppTheme.panelBorder.opacity(0.95), lineWidth: 1)
+        )
     }
 }
 
@@ -198,6 +293,10 @@ struct StatusBadge: View {
             return "Em andamento"
         }
 
+        if normalized.contains("assin") {
+            return "Assinatura"
+        }
+
         return "Pendente"
     }
 
@@ -206,7 +305,7 @@ struct StatusBadge: View {
             return AppTheme.success
         }
 
-        if statusLabel == "Em andamento" {
+        if statusLabel == "Em andamento" || statusLabel == "Assinatura" {
             return AppTheme.warning
         }
 

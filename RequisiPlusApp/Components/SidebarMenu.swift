@@ -12,6 +12,11 @@ struct GlassTabBar: View {
                     VStack(spacing: 4) {
                         Image(systemName: section.icon)
                             .font(.system(size: 15, weight: .semibold))
+                            .frame(width: 28, height: 28)
+                            .background(
+                                Circle()
+                                    .fill(selectedSection == section ? AppTheme.skyBlue : Color.clear)
+                            )
 
                         Text(section.tabTitle)
                             .font(.system(size: 10, weight: .semibold))

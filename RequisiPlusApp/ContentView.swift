@@ -10,10 +10,10 @@ enum AppSection: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .inicio: return "house"
+        case .inicio: return "house.fill"
         case .fazerRequisicao: return "square.and.pencil"
-        case .verRequisicoes: return "clipboard.text"
-        case .perfil: return "person.crop.circle"
+        case .verRequisicoes: return "doc.text.fill"
+        case .perfil: return "person.crop.circle.fill"
         }
     }
 }
