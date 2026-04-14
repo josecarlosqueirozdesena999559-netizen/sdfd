@@ -78,6 +78,7 @@ struct SupabaseDatabaseService {
         entries: [RequestedItemEntry],
         observation: String
     ) async throws -> Requisition {
+        let generatedCode = makeRequisitionCode()
         let itemPayload = entries.enumerated().map { index, entry in
             RequisitionItemPayload(
                 item: entry.item.name,
@@ -98,6 +99,9 @@ struct SupabaseDatabaseService {
             data: DateFormatter.requisitionDate.string(from: Date()),
             items: Self.encodeJSONString(itemPayload),
             status: "aguardando_assinatura_requisicao",
+            codigo: generatedCode,
+            numeroRequisicao: generatedCode,
+            numeroSolicitacao: generatedCode,
             solicitanteCpf: profile.cpf,
             solicitanteFuncao: profile.funcao,
             devolucaoMotivo: buildObservation(
@@ -232,6 +236,13 @@ struct SupabaseDatabaseService {
             throw SupabaseDatabaseError.requestFailed("Nao foi possivel interpretar os dados do banco.")
         }
     }
+}
+
+private func makeRequisitionCode(now: Date = Date()) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "pt_BR")
+    formatter.dateFormat = "ddMMyyHHmmss"
+    return formatter.string(from: now)
 }
 
 private func buildObservation(observation: String, entries: [RequestedItemEntry]) -> String? {
@@ -378,6 +389,9 @@ private struct NewRequisitionPayload: Encodable {
     let data: String
     let items: String
     let status: String
+    let codigo: String
+    let numeroRequisicao: String
+    let numeroSolicitacao: String
     let solicitanteCpf: String?
     let solicitanteFuncao: String?
     let devolucaoMotivo: String?
@@ -389,6 +403,9 @@ private struct NewRequisitionPayload: Encodable {
         case data
         case items
         case status
+        case codigo
+        case numeroRequisicao = "numero_requisicao"
+        case numeroSolicitacao = "numero_solicitacao"
         case solicitanteCpf = "solicitante_cpf"
         case solicitanteFuncao = "solicitante_funcao"
         case devolucaoMotivo = "devolucao_motivo"

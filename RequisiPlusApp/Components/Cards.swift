@@ -42,6 +42,7 @@ struct ScreenContainer<Content: View>: View {
             .padding(.top, 10)
             .padding(.bottom, 28)
         }
+        .scrollDismissesKeyboard(.interactively)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }

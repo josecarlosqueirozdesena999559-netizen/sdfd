@@ -47,7 +47,7 @@ private struct DashboardView: View {
             AppTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                MobileHeader(title: selectedSection.rawValue)
+                MobileHeader(title: selectedSection.headerTitle)
 
                 currentScreen
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -128,6 +128,19 @@ private struct MobileHeader: View {
 }
 
 extension AppSection {
+    var headerTitle: String {
+        switch self {
+        case .inicio:
+            return "Inicio"
+        case .fazerRequisicao:
+            return "Requisicao"
+        case .verRequisicoes:
+            return "Requisicoes"
+        case .perfil:
+            return "Perfil"
+        }
+    }
+
     var tabTitle: String {
         switch self {
         case .inicio:
