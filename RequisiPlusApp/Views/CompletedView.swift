@@ -3,17 +3,19 @@ import SwiftUI
 struct CreateRequisitionView: View {
     @EnvironmentObject private var appDataViewModel: AppDataViewModel
     @State private var selectedMaterial: MaterialType?
+    @State private var currentBalance = ""
+    @State private var requestedBalance = ""
     @State private var justification = ""
 
     var body: some View {
         ScreenContainer(
-            title: "Fazer requisicao",
-            subtitle: "Envie um novo pedido de material com um fluxo rapido e organizado."
+            title: "",
+            subtitle: ""
         ) {
             PrimaryCard {
                 SectionHeader(
                     title: "Nova requisicao",
-                    subtitle: "Preencha os dados essenciais para registrar seu pedido."
+                    subtitle: "Escolha o material, informe os saldos e envie para processamento no sistema."
                 )
 
                 VStack(alignment: .leading, spacing: 18) {
@@ -44,6 +46,18 @@ struct CreateRequisitionView: View {
                             .foregroundStyle(AppTheme.textMuted)
                     }
 
+                    balanceField(
+                        title: "Saldo atual",
+                        prompt: "Digite seu saldo atual",
+                        text: $currentBalance
+                    )
+
+                    balanceField(
+                        title: "Saldo necessario",
+                        prompt: "Digite o saldo que precisa",
+                        text: $requestedBalance
+                    )
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Observacao")
                             .font(.system(size: 14, weight: .semibold))
@@ -65,9 +79,13 @@ struct CreateRequisitionView: View {
                         Task {
                             await appDataViewModel.createRequisition(
                                 materialType: selectedMaterial,
+                                currentBalance: currentBalance,
+                                requestedBalance: requestedBalance,
                                 observation: justification
                             )
                             if appDataViewModel.successMessage != nil {
+                                currentBalance = ""
+                                requestedBalance = ""
                                 justification = ""
                             }
                         }
@@ -95,8 +113,8 @@ struct CreateRequisitionView: View {
                         .shadow(color: AppTheme.deepBlue.opacity(0.18), radius: 14, x: 0, y: 8)
                     }
                     .buttonStyle(.plain)
-                    .disabled(selectedMaterial == nil || appDataViewModel.createInProgress)
-                    .opacity(selectedMaterial == nil || appDataViewModel.createInProgress ? 0.65 : 1)
+                    .disabled(selectedMaterial == nil || currentBalance.isEmpty || requestedBalance.isEmpty || appDataViewModel.createInProgress)
+                    .opacity(selectedMaterial == nil || currentBalance.isEmpty || requestedBalance.isEmpty || appDataViewModel.createInProgress ? 0.65 : 1)
                 }
             }
 
@@ -127,6 +145,26 @@ struct CreateRequisitionView: View {
             if selectedMaterial == nil {
                 selectedMaterial = newValue.first
             }
+        }
+    }
+
+    private func balanceField(title: String, prompt: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+
+            TextField(prompt, text: text)
+                .keyboardType(.decimalPad)
+                .padding(.horizontal, 16)
+                .frame(height: 56)
+                .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(AppTheme.fieldBorder, lineWidth: 1)
+                )
+                .foregroundStyle(AppTheme.textPrimary)
+                .tint(AppTheme.deepBlue)
         }
     }
 

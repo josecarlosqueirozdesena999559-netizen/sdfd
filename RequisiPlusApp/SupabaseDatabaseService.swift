@@ -60,18 +60,29 @@ struct SupabaseDatabaseService {
         session userSession: UserSession,
         profile: UserProfile,
         materialType: MaterialType,
+        currentBalance: String,
+        requestedBalance: String,
         observation: String
     ) async throws -> Requisition {
+        let itemDetails = [
+            currentBalance.isEmpty ? nil : "Saldo atual: \(currentBalance)",
+            requestedBalance.isEmpty ? nil : "Saldo necessario: \(requestedBalance)"
+        ].compactMap { $0 }
+
         let payload = NewRequisitionPayload(
             setor: profile.setor,
             solicitante: profile.name,
             categoria: materialType.title,
             data: DateFormatter.requisitionDate.string(from: Date()),
-            items: [],
+            items: itemDetails,
             status: "pendente",
             solicitanteCpf: profile.cpf,
             solicitanteFuncao: profile.funcao,
-            devolucaoMotivo: observation.isEmpty ? nil : observation
+            devolucaoMotivo: buildObservation(
+                observation: observation,
+                currentBalance: currentBalance,
+                requestedBalance: requestedBalance
+            )
         )
 
         let records: [RequisicaoRecord] = try await perform(
@@ -167,6 +178,20 @@ struct SupabaseDatabaseService {
             throw SupabaseDatabaseError.requestFailed("Nao foi possivel interpretar os dados do banco.")
         }
     }
+}
+
+private func buildObservation(observation: String, currentBalance: String, requestedBalance: String) -> String? {
+    let parts = [
+        currentBalance.isEmpty ? nil : "Saldo atual: \(currentBalance)",
+        requestedBalance.isEmpty ? nil : "Saldo necessario: \(requestedBalance)",
+        observation.isEmpty ? nil : "Observacao: \(observation)"
+    ].compactMap { $0 }
+
+    guard parts.isEmpty == false else {
+        return nil
+    }
+
+    return parts.joined(separator: " | ")
 }
 
 private struct UsuarioRecord: Decodable {

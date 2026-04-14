@@ -146,8 +146,12 @@ struct HomeView: View {
                                     .font(.system(size: 15, weight: .bold))
                                     .foregroundStyle(AppTheme.textPrimary)
 
+                                Text("Numero \(requisition.code)")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(AppTheme.primaryBlue)
+
                                 Text(requisition.date)
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(AppTheme.textMuted)
                             }
 

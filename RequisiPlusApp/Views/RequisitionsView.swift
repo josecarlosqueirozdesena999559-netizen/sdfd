@@ -7,8 +7,8 @@ struct RequisitionsView: View {
 
     var body: some View {
         ScreenContainer(
-            title: "Ver requisicoes",
-            subtitle: "Busque e acompanhe o andamento de cada solicitacao."
+            title: "",
+            subtitle: ""
         ) {
             searchCard
             listCard

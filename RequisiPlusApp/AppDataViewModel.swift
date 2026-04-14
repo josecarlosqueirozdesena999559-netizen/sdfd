@@ -28,7 +28,7 @@ final class AppDataViewModel: ObservableObject {
                 ? "Voce tem requisicoes pendentes."
                 : "Sem pendencias no momento.",
             message: summary.pendingCount > 0
-                ? "Abra o menu de requisicoes para acompanhar o status e conferir o que precisa ser assinado no computador."
+                ? "Abra a aba de requisicoes para acompanhar o status e conferir os detalhes."
                 : "Suas requisicoes estao em dia. Voce pode abrir uma nova solicitacao quando precisar.",
             actionTitle: summary.pendingCount > 0 ? "Ver requisicoes" : "Fazer requisicao"
         )
@@ -57,7 +57,12 @@ final class AppDataViewModel: ObservableObject {
         }
     }
 
-    func createRequisition(materialType: MaterialType?, observation: String) async {
+    func createRequisition(
+        materialType: MaterialType?,
+        currentBalance: String,
+        requestedBalance: String,
+        observation: String
+    ) async {
         guard let profile, let materialType else {
             errorMessage = "Nao foi possivel identificar o usuario ou a categoria para criar a requisicao."
             return
@@ -76,6 +81,8 @@ final class AppDataViewModel: ObservableObject {
                 session: userSession,
                 profile: profile,
                 materialType: materialType,
+                currentBalance: currentBalance.trimmingCharacters(in: .whitespacesAndNewlines),
+                requestedBalance: requestedBalance.trimmingCharacters(in: .whitespacesAndNewlines),
                 observation: observation.trimmingCharacters(in: .whitespacesAndNewlines)
             )
 

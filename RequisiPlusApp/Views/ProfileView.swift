@@ -6,8 +6,8 @@ struct ProfileView: View {
 
     var body: some View {
         ScreenContainer(
-            title: "Perfil",
-            subtitle: "Seus dados principais e informacoes da conta."
+            title: "",
+            subtitle: ""
         ) {
             identityCard
             detailsCard
@@ -116,5 +116,6 @@ struct ProfileView: View {
                 )
         }
         .buttonStyle(.plain)
+        .padding(.bottom, 24)
     }
 }

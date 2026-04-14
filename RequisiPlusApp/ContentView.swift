@@ -53,7 +53,7 @@ private struct DashboardView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.horizontal, 18)
                     .padding(.top, 2)
-                    .padding(.bottom, 116)
+                    .padding(.bottom, 132)
             }
 
             GlassTabBar(selectedSection: $selectedSection)
