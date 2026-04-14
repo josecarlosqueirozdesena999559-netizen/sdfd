@@ -158,6 +158,13 @@ struct CreateRequisitionView: View {
             .frame(maxWidth: .infinity)
             .frame(minHeight: 320, maxHeight: 520)
 
+            if hasIncompleteEntry(for: material) {
+                Text("Preencha saldo atual e quantidade para cada item antes de enviar.")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AppTheme.danger)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             Button {
                 Task {
                     await appDataViewModel.createRequisition(
@@ -189,8 +196,8 @@ struct CreateRequisitionView: View {
                 )
             }
             .buttonStyle(.plain)
-            .disabled(selectedEntries(for: material).isEmpty || appDataViewModel.createInProgress)
-            .opacity(selectedEntries(for: material).isEmpty || appDataViewModel.createInProgress ? 0.65 : 1)
+            .disabled(selectedEntries(for: material).isEmpty || hasIncompleteEntry(for: material) || appDataViewModel.createInProgress)
+            .opacity(selectedEntries(for: material).isEmpty || hasIncompleteEntry(for: material) || appDataViewModel.createInProgress ? 0.65 : 1)
         }
     }
 
@@ -292,19 +299,30 @@ struct CreateRequisitionView: View {
 
     private func selectedEntries(for material: MaterialType) -> [RequestedItemEntry] {
         categoryItems(for: material).compactMap { item in
-            let current = currentBalances[item.id, default: ""].trimmingCharacters(in: .whitespacesAndNewlines)
-            let requested = requestedQuantities[item.id, default: ""].trimmingCharacters(in: .whitespacesAndNewlines)
+            let entry = RequestedItemEntry(
+                id: item.id,
+                item: item,
+                currentBalance: currentBalances[item.id, default: ""],
+                requestedQuantity: requestedQuantities[item.id, default: ""]
+            )
 
-            guard current.isEmpty == false || requested.isEmpty == false else {
+            guard entry.isComplete else {
                 return nil
             }
 
-            return RequestedItemEntry(
+            return entry
+        }
+    }
+
+    private func hasIncompleteEntry(for material: MaterialType) -> Bool {
+        categoryItems(for: material).contains { item in
+            let entry = RequestedItemEntry(
                 id: item.id,
                 item: item,
-                currentBalance: current,
-                requestedQuantity: requested
+                currentBalance: currentBalances[item.id, default: ""],
+                requestedQuantity: requestedQuantities[item.id, default: ""]
             )
+            return entry.hasAnyValue && entry.isComplete == false
         }
     }
 

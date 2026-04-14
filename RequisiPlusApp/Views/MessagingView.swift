@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct MessagingView: View {
     @EnvironmentObject private var appDataViewModel: AppDataViewModel
     @FocusState private var isComposerFocused: Bool
+    let onBack: () -> Void
     @State private var messageText = ""
     @State private var selectedThreadID: String?
     @State private var showingFileImporter = false
@@ -15,6 +16,8 @@ struct MessagingView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 10) {
+                topBar
+
                 if canSwitchThreads {
                     threadInboxCard(compact: geometry.size.width < 900)
                 }
@@ -59,6 +62,30 @@ struct MessagingView: View {
             appDataViewModel.stopTyping()
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+
+    private var topBar: some View {
+        HStack {
+            Button(action: onBack) {
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 13, weight: .bold))
+                    Text("Voltar")
+                        .font(.system(size: 15, weight: .bold))
+                }
+                .foregroundStyle(AppTheme.deepBlue)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color.white, in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(AppTheme.fieldBorder, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+        }
     }
 
     private func threadInboxCard(compact: Bool) -> some View {
@@ -237,30 +264,32 @@ struct MessagingView: View {
                 .padding(.vertical, 12)
                 .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
 
-                Button {
-                    guard let selectedThread else { return }
-                    Task {
-                        await appDataViewModel.sendChatMessage(thread: selectedThread, text: messageText, attachmentUpload: pendingAttachment)
-                        messageText = ""
-                        pendingAttachment = nil
-                        dismissKeyboard()
-                    }
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(isComposerEmpty ? AppTheme.textSoft.opacity(0.45) : AppTheme.primaryBlue)
-                            .frame(width: 46, height: 46)
-                        if appDataViewModel.chatSendInProgress {
-                            ProgressView().tint(.white)
-                        } else {
-                            Image(systemName: isComposerEmpty ? "mic.fill" : "paperplane.fill")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(.white)
+                if recorder.isRecording == false {
+                    Button {
+                        guard let selectedThread else { return }
+                        Task {
+                            await appDataViewModel.sendChatMessage(thread: selectedThread, text: messageText, attachmentUpload: pendingAttachment)
+                            messageText = ""
+                            pendingAttachment = nil
+                            dismissKeyboard()
+                        }
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(isComposerEmpty ? AppTheme.textSoft.opacity(0.45) : AppTheme.primaryBlue)
+                                .frame(width: 46, height: 46)
+                            if appDataViewModel.chatSendInProgress {
+                                ProgressView().tint(.white)
+                            } else {
+                                Image(systemName: isComposerEmpty ? "mic.fill" : "paperplane.fill")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundStyle(.white)
+                            }
                         }
                     }
+                    .buttonStyle(.plain)
+                    .disabled(selectedThread == nil || isComposerEmpty)
                 }
-                .buttonStyle(.plain)
-                .disabled(selectedThread == nil || isComposerEmpty)
             }
         }
         .padding(.horizontal, 12)
@@ -297,15 +326,34 @@ struct MessagingView: View {
     private func attachmentPreview(for attachment: ChatAttachmentUpload) -> some View {
         Group {
             if attachment.mimeType.hasPrefix("audio/") {
-                ChatAudioClipPlayer(
-                    source: .data(attachment.data, "m4a"),
-                    title: "Audio",
-                    accentColor: AppTheme.primaryBlue,
-                    foregroundColor: AppTheme.textPrimary,
-                    backgroundColor: AppTheme.fieldFill,
-                    waveformLevels: recorder.lastRecordingLevels,
-                    preferredDuration: recorder.lastRecordingDuration
-                )
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Audio pronto para revisar")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(AppTheme.textPrimary)
+                            Text("Escute antes de enviar ou remova se quiser gravar de novo.")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(AppTheme.textMuted)
+                        }
+                        Spacer()
+                        Button("Remover") { pendingAttachment = nil }
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(AppTheme.danger)
+                    }
+
+                    ChatAudioClipPlayer(
+                        source: .data(attachment.data, "m4a"),
+                        title: "Audio",
+                        accentColor: AppTheme.primaryBlue,
+                        foregroundColor: AppTheme.textPrimary,
+                        backgroundColor: AppTheme.fieldFill,
+                        waveformLevels: recorder.lastRecordingLevels,
+                        preferredDuration: recorder.lastRecordingDuration
+                    )
+                }
+                .padding(12)
+                .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             } else {
                 HStack(spacing: 12) {
                     Image(systemName: "paperclip")

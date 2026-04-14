@@ -46,6 +46,7 @@ private struct DashboardView: View {
     @EnvironmentObject private var pushNotificationManager: PushNotificationManager
     @StateObject private var appDataViewModel: AppDataViewModel
     @State private var selectedSection: AppSection = .inicio
+    @State private var lastNonChatSection: AppSection = .inicio
     @State private var showingNotifications = false
 
     init(session: UserSession) {
@@ -57,17 +58,19 @@ private struct DashboardView: View {
             AppTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                MobileHeader(
-                    title: selectedSection.headerTitle,
-                    unreadNotificationCount: appDataViewModel.unreadNotificationCount,
-                    onNotificationsTap: {
-                        showingNotifications = true
-                    }
-                )
+                if selectedSection != .chat {
+                    MobileHeader(
+                        title: selectedSection.headerTitle,
+                        unreadNotificationCount: appDataViewModel.unreadNotificationCount,
+                        onNotificationsTap: {
+                            showingNotifications = true
+                        }
+                    )
+                }
 
                 currentScreen
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.top, selectedSection == .chat ? 0 : 8)
+                    .padding(.top, selectedSection == .chat ? 12 : 8)
                     .padding(.bottom, selectedSection == .chat ? 86 : 110)
             }
 
@@ -87,6 +90,11 @@ private struct DashboardView: View {
         }
         .onChange(of: appDataViewModel.profile?.isAdmin) { _, _ in
             syncSelectedSectionWithProfile()
+        }
+        .onChange(of: selectedSection) { _, newValue in
+            if newValue != .chat {
+                lastNonChatSection = newValue
+            }
         }
         .onChange(of: pushNotificationManager.deviceToken) { _, _ in
             Task {
@@ -149,7 +157,9 @@ private struct DashboardView: View {
         case .adminAssinadas:
             RequisitionsView(fixedFilter: .signed)
         case .chat:
-            MessagingView()
+            MessagingView {
+                selectedSection = lastNonChatSection
+            }
         case .perfil:
             ProfileView()
         }

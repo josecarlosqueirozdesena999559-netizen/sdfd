@@ -51,6 +51,22 @@ struct RequestedItemEntry: Identifiable, Hashable {
     let item: MaterialCatalogItem
     let currentBalance: String
     let requestedQuantity: String
+
+    var trimmedCurrentBalance: String {
+        currentBalance.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var trimmedRequestedQuantity: String {
+        requestedQuantity.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var hasAnyValue: Bool {
+        trimmedCurrentBalance.isEmpty == false || trimmedRequestedQuantity.isEmpty == false
+    }
+
+    var isComplete: Bool {
+        trimmedCurrentBalance.isEmpty == false && trimmedRequestedQuantity.isEmpty == false
+    }
 }
 
 struct UserProfile {

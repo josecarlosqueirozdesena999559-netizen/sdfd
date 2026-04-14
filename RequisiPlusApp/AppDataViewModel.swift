@@ -123,6 +123,16 @@ final class AppDataViewModel: ObservableObject {
             return
         }
 
+        guard entries.isEmpty == false else {
+            errorMessage = "Adicione pelo menos um item completo antes de enviar a requisiÃ§Ã£o."
+            return
+        }
+
+        if entries.contains(where: { $0.isComplete == false }) {
+            errorMessage = "Preencha saldo atual e quantidade para todos os itens selecionados."
+            return
+        }
+
         createInProgress = true
         errorMessage = nil
         successMessage = nil
