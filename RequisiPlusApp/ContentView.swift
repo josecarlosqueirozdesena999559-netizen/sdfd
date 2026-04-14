@@ -1,9 +1,11 @@
 import SwiftUI
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case inicio = "Início"
-    case fazerRequisicao = "Fazer requisição"
-    case verRequisicoes = "Ver requisições"
+    case inicio = "Inicio"
+    case fazerRequisicao = "Fazer requisicao"
+    case verRequisicoes = "Ver requisicoes"
+    case adminPendentes = "Pendentes"
+    case adminAssinadas = "Assinadas"
     case chat = "Chat"
     case perfil = "Perfil"
 
@@ -14,6 +16,8 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .inicio: return "house.fill"
         case .fazerRequisicao: return "square.and.pencil"
         case .verRequisicoes: return "doc.text.fill"
+        case .adminPendentes: return "clock.badge.fill"
+        case .adminAssinadas: return "signature"
         case .chat: return "bubble.left.and.bubble.right.fill"
         case .perfil: return "person.crop.circle.fill"
         }
@@ -58,7 +62,8 @@ private struct DashboardView: View {
                     },
                     onChatTap: {
                         selectedSection = .chat
-                    }
+                    },
+                    showsChatShortcut: availableSections.contains(.chat)
                 )
 
                 currentScreen
@@ -67,7 +72,7 @@ private struct DashboardView: View {
                     .padding(.bottom, 110)
             }
 
-            GlassTabBar(selectedSection: $selectedSection)
+            GlassTabBar(selectedSection: $selectedSection, availableSections: availableSections)
                 .padding(.horizontal, 18)
                 .padding(.bottom, 12)
         }
@@ -76,12 +81,22 @@ private struct DashboardView: View {
                 await appDataViewModel.load()
                 await appDataViewModel.ensureDefaultAdminThread()
             }
+
+            syncSelectedSectionWithProfile()
+        }
+        .onChange(of: appDataViewModel.profile?.isAdmin) { _, _ in
+            syncSelectedSectionWithProfile()
         }
         .sheet(isPresented: $showingNotifications) {
             NotificationsSheet(
                 notifications: appDataViewModel.notifications,
                 onOpenThread: { threadId in
                     showingNotifications = false
+
+                    guard availableSections.contains(.chat) else {
+                        return
+                    }
+
                     selectedSection = .chat
                     if let threadId {
                         try? await appDataViewModel.loadMessages(for: threadId)
@@ -105,11 +120,31 @@ private struct DashboardView: View {
             CreateRequisitionView()
         case .verRequisicoes:
             RequisitionsView()
+        case .adminPendentes:
+            RequisitionsView(fixedFilter: .pending)
+        case .adminAssinadas:
+            RequisitionsView(fixedFilter: .signed)
         case .chat:
             MessagingView()
         case .perfil:
             ProfileView()
         }
+    }
+
+    private var availableSections: [AppSection] {
+        if appDataViewModel.profile?.isAdmin == true {
+            return [.adminPendentes, .adminAssinadas]
+        }
+
+        return [.inicio, .fazerRequisicao, .verRequisicoes, .chat, .perfil]
+    }
+
+    private func syncSelectedSectionWithProfile() {
+        guard availableSections.contains(selectedSection) == false, let firstSection = availableSections.first else {
+            return
+        }
+
+        selectedSection = firstSection
     }
 }
 
@@ -123,7 +158,7 @@ private struct SessionLoadingView: View {
                     .tint(AppTheme.deepBlue)
                     .scaleEffect(1.2)
 
-                Text("Validando sua sessão...")
+                Text("Validando sua sessao...")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppTheme.deepBlue)
             }
@@ -136,6 +171,7 @@ private struct MobileHeader: View {
     let unreadNotificationCount: Int
     let onNotificationsTap: () -> Void
     let onChatTap: () -> Void
+    let showsChatShortcut: Bool
 
     var body: some View {
         HStack {
@@ -153,7 +189,10 @@ private struct MobileHeader: View {
 
             HStack(spacing: 10) {
                 headerIconButton(systemImage: "bell.badge.fill", badge: unreadNotificationCount, action: onNotificationsTap)
-                headerIconButton(systemImage: "bubble.left.and.bubble.right.fill", badge: 0, action: onChatTap)
+
+                if showsChatShortcut {
+                    headerIconButton(systemImage: "bubble.left.and.bubble.right.fill", badge: 0, action: onChatTap)
+                }
             }
         }
         .padding(.horizontal, 18)
@@ -161,7 +200,7 @@ private struct MobileHeader: View {
         .padding(.bottom, 22)
         .background(
             AppTheme.heroGradient
-            .ignoresSafeArea(edges: .top)
+                .ignoresSafeArea(edges: .top)
         )
     }
 
@@ -192,11 +231,15 @@ extension AppSection {
     var headerTitle: String {
         switch self {
         case .inicio:
-            return "Início"
+            return "Inicio"
         case .fazerRequisicao:
-            return "Fazer requisição"
+            return "Fazer requisicao"
         case .verRequisicoes:
-            return "Requisições"
+            return "Requisicoes"
+        case .adminPendentes:
+            return "Pendentes"
+        case .adminAssinadas:
+            return "Assinadas"
         case .chat:
             return "Chat"
         case .perfil:
@@ -207,11 +250,15 @@ extension AppSection {
     var tabTitle: String {
         switch self {
         case .inicio:
-            return "Início"
+            return "Inicio"
         case .fazerRequisicao:
-            return "Requisição"
+            return "Requisicao"
         case .verRequisicoes:
-            return "Requisições"
+            return "Requisicoes"
+        case .adminPendentes:
+            return "Pendentes"
+        case .adminAssinadas:
+            return "Assinadas"
         case .chat:
             return "Chat"
         case .perfil:
@@ -232,8 +279,8 @@ private struct NotificationsSheet: View {
                 VStack(spacing: 12) {
                     if notifications.isEmpty {
                         PrimaryCard {
-                            SectionHeader(title: "Sem notificações")
-                            Text("As novas mensagens e atualizações importantes vão aparecer aqui.")
+                            SectionHeader(title: "Sem notificacoes")
+                            Text("As novas mensagens e atualizacoes importantes vao aparecer aqui.")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(AppTheme.textMuted)
                         }
@@ -278,7 +325,7 @@ private struct NotificationsSheet: View {
                 .padding(16)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("Notificações")
+            .navigationTitle("Notificacoes")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Fechar") {

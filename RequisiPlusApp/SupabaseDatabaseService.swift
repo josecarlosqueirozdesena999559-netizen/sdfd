@@ -92,8 +92,15 @@ struct SupabaseDatabaseService {
             path = "/rest/v1/chat_threads?select=*&requester_user_id=eq.\(profile.id)&order=updated_at.desc"
         }
 
-        let records: [ChatThreadRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
-        return records.map { $0.toDomain(for: profile) }
+        async let recordsTask: [ChatThreadRecord] = performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
+        async let unreadCountsTask = fetchUnreadMessageCounts(session: userSession, profile: profile)
+
+        let records = try await recordsTask
+        let unreadCounts = try await unreadCountsTask
+
+        return records.map {
+            $0.toDomain(for: profile, unreadCount: unreadCounts[$0.id] ?? $0.unreadCount ?? 0)
+        }
     }
 
     func fetchChatMessages(session userSession: UserSession, threadId: String) async throws -> [ChatMessage] {
@@ -110,7 +117,7 @@ struct SupabaseDatabaseService {
         let path = "/rest/v1/chat_threads?select=*&requester_user_id=eq.\(profile.id)&admin_user_id=eq.\(adminContact.id)&limit=1"
 
         if let existing: ChatThreadRecord = try await fetchFirstOptional(path: path, accessToken: userSession.accessToken) {
-            return existing.toDomain(for: profile)
+            return existing.toDomain(for: profile, unreadCount: existing.unreadCount ?? 0)
         }
 
         let payload = NewChatThreadPayload(
@@ -136,7 +143,7 @@ struct SupabaseDatabaseService {
             throw SupabaseDatabaseError.requestFailed("Não foi possível criar a conversa com a administração.")
         }
 
-        return thread.toDomain(for: profile)
+        return thread.toDomain(for: profile, unreadCount: thread.unreadCount ?? 0)
     }
 
     func sendChatMessage(
@@ -183,21 +190,6 @@ struct SupabaseDatabaseService {
             method: "PATCH",
             accessToken: userSession.accessToken,
             body: updatePayload,
-            preferRepresentation: true
-        )
-
-        let notificationPayload = NewNotificationPayload(
-            userId: thread.counterpartUserId,
-            title: "Nova mensagem",
-            body: "\(profile.name) enviou uma nova mensagem.",
-            targetThreadId: thread.id
-        )
-
-        let _: [NotificationRecord] = try await performOptional(
-            path: "/rest/v1/user_notifications?select=id",
-            method: "POST",
-            accessToken: userSession.accessToken,
-            body: notificationPayload,
             preferRepresentation: true
         )
 
@@ -488,6 +480,18 @@ struct SupabaseDatabaseService {
         )
     }
 
+    private func fetchUnreadMessageCounts(
+        session userSession: UserSession,
+        profile: UserProfile
+    ) async throws -> [String: Int] {
+        let path = "/rest/v1/chat_messages?select=thread_id&recipient_user_id=eq.\(profile.id)&seen_at=is.null&deleted_at=is.null"
+        let rows: [UnreadThreadMessageRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
+
+        return rows.reduce(into: [:]) { partialResult, row in
+            partialResult[row.threadId, default: 0] += 1
+        }
+    }
+
     private func emptyValue<Response: Decodable>(for _: Response.Type) -> Response? {
         if Response.self == [NotificationRecord].self {
             return [] as? Response
@@ -670,7 +674,7 @@ private struct ChatThreadRecord: Decodable {
         case unreadCount = "unread_count"
     }
 
-    func toDomain(for profile: UserProfile) -> ChatThread {
+    func toDomain(for profile: UserProfile, unreadCount: Int) -> ChatThread {
         let showingAdmin = profile.id == requesterUserId
         let counterpartName = showingAdmin ? adminName : requesterName
         let counterpartRole = showingAdmin ? (adminRole ?? "Administrador") : (requesterRole ?? "Usuário")
@@ -684,8 +688,16 @@ private struct ChatThreadRecord: Decodable {
             counterpartUserId: counterpartUserId,
             lastMessagePreview: lastMessagePreview ?? "Conversa sem mensagens ainda.",
             updatedAt: AppDateFormatter.parse(dateString: updatedAt),
-            unreadCount: unreadCount ?? 0
+            unreadCount: unreadCount
         )
+    }
+}
+
+private struct UnreadThreadMessageRecord: Decodable {
+    let threadId: String
+
+    enum CodingKeys: String, CodingKey {
+        case threadId = "thread_id"
     }
 }
 
@@ -947,20 +959,6 @@ private struct DeleteMessagePayload: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case deletedAt = "deleted_at"
-    }
-}
-
-private struct NewNotificationPayload: Encodable {
-    let userId: String
-    let title: String
-    let body: String
-    let targetThreadId: String?
-
-    enum CodingKeys: String, CodingKey {
-        case userId = "user_id"
-        case title
-        case body
-        case targetThreadId = "target_thread_id"
     }
 }
 

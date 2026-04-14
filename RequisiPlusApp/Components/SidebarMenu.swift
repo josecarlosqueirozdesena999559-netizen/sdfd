@@ -2,10 +2,11 @@ import SwiftUI
 
 struct GlassTabBar: View {
     @Binding var selectedSection: AppSection
+    let availableSections: [AppSection]
 
     var body: some View {
         HStack(spacing: 8) {
-            ForEach(AppSection.allCases) { section in
+            ForEach(availableSections) { section in
                 Button {
                     selectedSection = section
                 } label: {

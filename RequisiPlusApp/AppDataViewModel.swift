@@ -61,6 +61,14 @@ final class AppDataViewModel: ObservableObject {
         notifications.filter { $0.isRead == false }.count
     }
 
+    var canCurrentUserSwitchChatThreads: Bool {
+        profile?.isAdmin ?? false
+    }
+
+    var currentAdminContact: ChatContact? {
+        adminContacts.first(where: { $0.isAdmin }) ?? adminContacts.first
+    }
+
     private func performLoad(showLoading: Bool) async {
         if showLoading {
             isLoading = true
@@ -140,11 +148,12 @@ final class AppDataViewModel: ObservableObject {
 
         if let profile {
             try? await databaseService.markThreadMessagesAsSeen(session: userSession, profile: profile, threadId: threadId)
+            await refreshSupplementaryData()
         }
     }
 
     func ensureDefaultAdminThread() async {
-        guard let profile, profile.isAdmin == false, chatThreads.isEmpty, let adminContact = adminContacts.first else {
+        guard let profile, profile.isRegularChatUser, chatThreads.isEmpty, let adminContact = currentAdminContact else {
             return
         }
 

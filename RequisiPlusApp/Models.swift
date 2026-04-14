@@ -94,6 +94,10 @@ struct ChatThread: Identifiable, Hashable {
     let lastMessagePreview: String
     let updatedAt: Date?
     let unreadCount: Int
+
+    var hasUnreadMessages: Bool {
+        unreadCount > 0
+    }
 }
 
 struct ChatAttachment: Hashable {
@@ -177,11 +181,23 @@ extension UserProfile {
     var isAdmin: Bool {
         role.normalizedSearchText.contains("admin")
     }
+
+    var isRegularChatUser: Bool {
+        isAdmin == false
+    }
 }
 
 extension Date {
     var shortBrazilianDateTime: String {
         AppDateFormatter.shortDateTime.string(from: self)
+    }
+
+    var shortBrazilianTime: String {
+        AppDateFormatter.shortTime.string(from: self)
+    }
+
+    var shortBrazilianDay: String {
+        AppDateFormatter.shortDay.string(from: self)
     }
 }
 
@@ -202,6 +218,20 @@ enum AppDateFormatter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "pt_BR")
         formatter.dateFormat = "dd/MM/yyyy 'às' HH:mm"
+        return formatter
+    }()
+
+    static let shortTime: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+
+    static let shortDay: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "dd 'de' MMM"
         return formatter
     }()
 

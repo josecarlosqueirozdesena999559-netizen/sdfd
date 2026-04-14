@@ -2,8 +2,14 @@ import SwiftUI
 
 struct RequisitionsView: View {
     @EnvironmentObject private var appDataViewModel: AppDataViewModel
+    private let fixedFilter: RequestFilter?
     @State private var searchText = ""
     @State private var selectedFilter: RequestFilter = .all
+
+    init(fixedFilter: RequestFilter? = nil) {
+        self.fixedFilter = fixedFilter
+        _selectedFilter = State(initialValue: fixedFilter ?? .all)
+    }
 
     var body: some View {
         ScreenContainer(title: "", subtitle: "") {
@@ -44,12 +50,14 @@ struct RequisitionsView: View {
                 text: $searchText
             )
 
-            HStack(spacing: 10) {
-                ForEach(RequestFilter.allCases) { filter in
-                    filterChip(filter)
-                }
+            if fixedFilter == nil {
+                HStack(spacing: 10) {
+                    ForEach(RequestFilter.allCases) { filter in
+                        filterChip(filter)
+                    }
 
-                Spacer()
+                    Spacer()
+                }
             }
         }
     }
@@ -185,9 +193,10 @@ struct RequisitionsView: View {
     }
 }
 
-private enum RequestFilter: String, CaseIterable, Identifiable {
+enum RequestFilter: String, CaseIterable, Identifiable {
     case all
     case pending
+    case signed
     case done
 
     var id: String { rawValue }
@@ -198,6 +207,8 @@ private enum RequestFilter: String, CaseIterable, Identifiable {
             return "Todas"
         case .pending:
             return "Pendentes"
+        case .signed:
+            return "Assinadas"
         case .done:
             return "Concluídas"
         }
@@ -209,6 +220,8 @@ private enum RequestFilter: String, CaseIterable, Identifiable {
             return "line.3.horizontal.decrease.circle"
         case .pending:
             return "clock.fill"
+        case .signed:
+            return "signature"
         case .done:
             return "checkmark.circle.fill"
         }
@@ -223,8 +236,9 @@ private enum RequestFilter: String, CaseIterable, Identifiable {
             return status.contains("pendente")
                 || status.contains("andamento")
                 || status.contains("conferencia")
-                || status.contains("assin")
                 || status.contains("recebido")
+        case .signed:
+            return requisition.normalizedStatus.contains("assin")
         case .done:
             let status = requisition.normalizedStatus
             return status.contains("conclu") || status.contains("finaliz") || status.contains("entreg")
