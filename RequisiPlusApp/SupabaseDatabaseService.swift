@@ -301,7 +301,6 @@ struct SupabaseDatabaseService {
             data: DateFormatter.requisitionDate.string(from: Date()),
             items: Self.encodeJSONString(itemPayload),
             status: "aguardando_assinatura_requisicao",
-            codigo: generatedCode,
             numeroRequisicao: generatedCode,
             numeroSolicitacao: generatedCode,
             solicitanteCpf: profile.cpf,
@@ -876,7 +875,6 @@ private struct NewRequisitionPayload: Encodable {
     let data: String
     let items: String
     let status: String
-    let codigo: String
     let numeroRequisicao: String
     let numeroSolicitacao: String
     let solicitanteCpf: String?
@@ -890,7 +888,6 @@ private struct NewRequisitionPayload: Encodable {
         case data
         case items
         case status
-        case codigo
         case numeroRequisicao = "numero_requisicao"
         case numeroSolicitacao = "numero_solicitacao"
         case solicitanteCpf = "solicitante_cpf"
