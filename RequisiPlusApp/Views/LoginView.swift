@@ -9,104 +9,68 @@ struct LoginView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let isCompact = geometry.size.height < 750
-            let horizontalPadding = max(14, geometry.size.width * 0.04)
-            let contentWidth = min(geometry.size.width - (horizontalPadding * 2), 620)
+            let contentWidth = min(geometry.size.width - 32, 620)
 
             ZStack {
-                backgroundLayer
+                AppTheme.background
+                    .ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        header(topInset: geometry.safeAreaInsets.top, isCompact: isCompact)
+                VStack(spacing: 0) {
+                    header
 
-                        formCard(isCompact: isCompact)
-                            .frame(maxWidth: contentWidth)
-                            .padding(.horizontal, horizontalPadding)
-                            .padding(.top, -28)
-                            .padding(.bottom, max(24, geometry.safeAreaInsets.bottom + 12))
+                    ScrollView(showsIndicators: false) {
+                        formContent
+                            .frame(maxWidth: contentWidth, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 28)
+                            .padding(.bottom, max(24, geometry.safeAreaInsets.bottom + 16))
+                            .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .ignoresSafeArea(edges: .top)
+            .ignoresSafeArea()
             .onTapGesture {
                 focusedField = nil
             }
         }
     }
 
-    private var backgroundLayer: some View {
-        ZStack {
-            Color.white.ignoresSafeArea()
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("requisi+")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(Color.white.opacity(0.82))
 
-            LinearGradient(
-                colors: [
-                    AppTheme.deepBlue.opacity(0.05),
-                    Color.white,
-                    AppTheme.primaryBlue.opacity(0.04)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-        }
-    }
-
-    private func header(topInset: CGFloat, isCompact: Bool) -> some View {
-        ZStack(alignment: .top) {
-            LinearGradient(
-                colors: [AppTheme.deepBlue, AppTheme.midBlue],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            Circle()
-                .fill(Color.white.opacity(0.08))
-                .frame(width: 240, height: 240)
-                .offset(x: 130, y: -40)
-
-            Circle()
-                .fill(Color.white.opacity(0.06))
-                .frame(width: 180, height: 180)
-                .offset(x: -140, y: 80)
-
-            VStack(spacing: isCompact ? 14 : 18) {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.white.opacity(0.14))
-                    .frame(width: 84, height: 84)
-                    .overlay(
-                        Image(systemName: "shippingbox.fill")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundStyle(.white)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                    )
-
-                VStack(spacing: 8) {
-                    Text("Requisi+")
-                        .font(.system(size: isCompact ? 30 : 34, weight: .bold))
-                        .foregroundStyle(.white)
-
-                    Text("Acesso ao almoxarifado")
-                        .font(.system(size: isCompact ? 15 : 17, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.88))
-                }
-            }
-            .padding(.top, max(topInset + 18, 30))
-            .padding(.bottom, isCompact ? 62 : 78)
-            .frame(maxWidth: .infinity)
-        }
-        .frame(height: isCompact ? 270 : 310)
-    }
-
-    private func formCard(isCompact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 24) {
             Text("Entrar")
-                .font(.system(size: isCompact ? 30 : 34, weight: .bold))
-                .foregroundStyle(AppTheme.textPrimary)
+                .font(.system(size: 34, weight: .bold))
+                .foregroundStyle(.white)
+
+            Text("Acesse o almoxarifado com o mesmo visual do restante do app.")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.84))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 24)
+        .background(
+            AppTheme.heroGradient
+                .ignoresSafeArea(edges: .top)
+        )
+    }
+
+    private var formContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Seu acesso")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+
+                Text("Use seu e-mail e senha para continuar.")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(AppTheme.textMuted)
+            }
 
             VStack(spacing: 16) {
                 inputField(
@@ -159,25 +123,13 @@ struct LoginView: View {
                         ),
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                     )
-                    .shadow(color: AppTheme.deepBlue.opacity(0.22), radius: 14, x: 0, y: 8)
                 }
                 .buttonStyle(.plain)
                 .disabled(authViewModel.isLoading || email.isEmpty || password.isEmpty)
                 .opacity(authViewModel.isLoading || email.isEmpty || password.isEmpty ? 0.65 : 1)
             }
         }
-        .padding(.horizontal, isCompact ? 22 : 30)
-        .padding(.vertical, isCompact ? 24 : 32)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.06), radius: 22, x: 0, y: 10)
-                .shadow(color: AppTheme.deepBlue.opacity(0.06), radius: 8, x: 0, y: 3)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(AppTheme.fieldBorder.opacity(0.6), lineWidth: 1)
-        )
+        .padding(.horizontal, 2)
     }
 
     private func inputField(
