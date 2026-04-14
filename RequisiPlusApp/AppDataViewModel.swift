@@ -21,6 +21,7 @@ final class AppDataViewModel: ObservableObject {
     private let userSession: UserSession
     private let databaseService: SupabaseDatabaseService
     private let realtimeService: SupabaseRealtimeService
+    private var lastRegisteredPushToken: String?
 
     init(
         userSession: UserSession,
@@ -221,6 +222,30 @@ final class AppDataViewModel: ObservableObject {
         do {
             try await databaseService.markNotificationAsRead(session: userSession, notificationId: notification.id)
             await refreshSupplementaryData()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func registerPushTokenIfNeeded(deviceToken: String, bundleIdentifier: String, environment: String) async {
+        guard let profile, deviceToken.isEmpty == false else {
+            return
+        }
+
+        let registrationKey = "\(deviceToken)|\(environment)"
+        guard lastRegisteredPushToken != registrationKey else {
+            return
+        }
+
+        do {
+            try await databaseService.registerPushToken(
+                session: userSession,
+                profile: profile,
+                deviceToken: deviceToken,
+                bundleIdentifier: bundleIdentifier,
+                environment: environment
+            )
+            lastRegisteredPushToken = registrationKey
         } catch {
             errorMessage = error.localizedDescription
         }

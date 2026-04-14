@@ -28,6 +28,7 @@
 		D10000010000000000000001 /* SupabaseDatabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000010000000000000001 /* SupabaseDatabaseService.swift */; };
 		D10000020000000000000001 /* AppDataViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000020000000000000001 /* AppDataViewModel.swift */; };
 		D10000030000000000000001 /* SupabaseRealtimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000030000000000000001 /* SupabaseRealtimeService.swift */; };
+		F10000010000000000000001 /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000020000000000000001 /* PushNotificationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,6 +55,8 @@
 		E10000010000000000000001 /* SupabaseDatabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseDatabaseService.swift; sourceTree = "<group>"; };
 		E10000020000000000000001 /* AppDataViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDataViewModel.swift; sourceTree = "<group>"; };
 		E10000030000000000000001 /* SupabaseRealtimeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseRealtimeService.swift; sourceTree = "<group>"; };
+		F10000020000000000000001 /* PushNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationManager.swift; sourceTree = "<group>"; };
+		F10000030000000000000001 /* RequisiPlusApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RequisiPlusApp.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,10 +93,12 @@
 				E10000010000000000000001 /* SupabaseDatabaseService.swift */,
 				E10000020000000000000001 /* AppDataViewModel.swift */,
 				E10000030000000000000001 /* SupabaseRealtimeService.swift */,
+				F10000020000000000000001 /* PushNotificationManager.swift */,
 				A10000330000000000000001 /* Components */,
 				A10000340000000000000001 /* Views */,
 				A100001B0000000000000001 /* Assets.xcassets */,
 				A100001C0000000000000001 /* Info.plist */,
+				F10000030000000000000001 /* RequisiPlusApp.entitlements */,
 			);
 			path = RequisiPlusApp;
 			sourceTree = "<group>";
@@ -217,6 +222,7 @@
 				D10000010000000000000001 /* SupabaseDatabaseService.swift in Sources */,
 				D10000020000000000000001 /* AppDataViewModel.swift in Sources */,
 				D10000030000000000000001 /* SupabaseRealtimeService.swift in Sources */,
+				F10000010000000000000001 /* PushNotificationManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -228,6 +234,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				APS_ENVIRONMENT = development;
+				CODE_SIGN_ENTITLEMENTS = RequisiPlusApp/RequisiPlusApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -252,6 +260,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				APS_ENVIRONMENT = production;
+				CODE_SIGN_ENTITLEMENTS = RequisiPlusApp/RequisiPlusApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";

@@ -233,6 +233,46 @@ struct SupabaseDatabaseService {
         )
     }
 
+    func registerPushToken(
+        session userSession: UserSession,
+        profile: UserProfile,
+        deviceToken: String,
+        bundleIdentifier: String,
+        environment: String
+    ) async throws {
+        let encodedToken = deviceToken.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? deviceToken
+        let existingPath = "/rest/v1/user_push_tokens?select=id&device_token=eq.\(encodedToken)&limit=1"
+
+        let payload = PushTokenPayload(
+            userId: profile.id,
+            deviceToken: deviceToken,
+            platform: "ios",
+            apnsEnvironment: environment,
+            bundleIdentifier: bundleIdentifier,
+            isActive: true,
+            lastRegisteredAt: AppDateFormatter.iso8601Basic.string(from: Date())
+        )
+
+        if let existing: PushTokenRecord = try await fetchFirstOptional(path: existingPath, accessToken: userSession.accessToken) {
+            let _: [PushTokenRecord] = try await performOptional(
+                path: "/rest/v1/user_push_tokens?id=eq.\(existing.id)&select=id",
+                method: "PATCH",
+                accessToken: userSession.accessToken,
+                body: payload,
+                preferRepresentation: true
+            )
+            return
+        }
+
+        let _: [PushTokenRecord] = try await performOptional(
+            path: "/rest/v1/user_push_tokens?select=id",
+            method: "POST",
+            accessToken: userSession.accessToken,
+            body: payload,
+            preferRepresentation: true
+        )
+    }
+
     func createRequisition(
         session userSession: UserSession,
         profile: UserProfile,
@@ -505,6 +545,9 @@ struct SupabaseDatabaseService {
         if Response.self == [ChatMessageRecord].self {
             return [] as? Response
         }
+        if Response.self == [PushTokenRecord].self {
+            return [] as? Response
+        }
         return nil
     }
 
@@ -699,6 +742,10 @@ private struct UnreadThreadMessageRecord: Decodable {
     enum CodingKeys: String, CodingKey {
         case threadId = "thread_id"
     }
+}
+
+private struct PushTokenRecord: Decodable {
+    let id: String
 }
 
 private struct ChatMessageRecord: Decodable {
@@ -959,6 +1006,26 @@ private struct DeleteMessagePayload: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case deletedAt = "deleted_at"
+    }
+}
+
+private struct PushTokenPayload: Encodable {
+    let userId: String
+    let deviceToken: String
+    let platform: String
+    let apnsEnvironment: String
+    let bundleIdentifier: String
+    let isActive: Bool
+    let lastRegisteredAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case deviceToken = "device_token"
+        case platform
+        case apnsEnvironment = "apns_environment"
+        case bundleIdentifier = "bundle_identifier"
+        case isActive = "is_active"
+        case lastRegisteredAt = "last_registered_at"
     }
 }
 

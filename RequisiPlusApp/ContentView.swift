@@ -26,6 +26,7 @@ enum AppSection: String, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
+    @EnvironmentObject private var pushNotificationManager: PushNotificationManager
 
     var body: some View {
         Group {
@@ -33,6 +34,7 @@ struct ContentView: View {
                 SessionLoadingView()
             } else if let session = authViewModel.session {
                 DashboardView(session: session)
+                    .environmentObject(pushNotificationManager)
             } else {
                 LoginView()
             }
@@ -41,6 +43,7 @@ struct ContentView: View {
 }
 
 private struct DashboardView: View {
+    @EnvironmentObject private var pushNotificationManager: PushNotificationManager
     @StateObject private var appDataViewModel: AppDataViewModel
     @State private var selectedSection: AppSection = .inicio
     @State private var showingNotifications = false
@@ -82,10 +85,35 @@ private struct DashboardView: View {
                 await appDataViewModel.ensureDefaultAdminThread()
             }
 
+            await pushNotificationManager.requestAuthorizationIfNeeded()
+            await syncPushTokenIfAvailable()
             syncSelectedSectionWithProfile()
         }
         .onChange(of: appDataViewModel.profile?.isAdmin) { _, _ in
             syncSelectedSectionWithProfile()
+        }
+        .onChange(of: pushNotificationManager.deviceToken) { _, _ in
+            Task {
+                await syncPushTokenIfAvailable()
+            }
+        }
+        .onChange(of: appDataViewModel.profile?.id) { _, _ in
+            Task {
+                await syncPushTokenIfAvailable()
+            }
+        }
+        .onChange(of: pushNotificationManager.pendingThreadId) { _, threadId in
+            guard let threadId, availableSections.contains(.chat) else {
+                return
+            }
+
+            selectedSection = .chat
+            Task {
+                try? await appDataViewModel.loadMessages(for: threadId)
+                await MainActor.run {
+                    pushNotificationManager.pendingThreadId = nil
+                }
+            }
         }
         .sheet(isPresented: $showingNotifications) {
             NotificationsSheet(
@@ -145,6 +173,18 @@ private struct DashboardView: View {
         }
 
         selectedSection = firstSection
+    }
+
+    private func syncPushTokenIfAvailable() async {
+        guard let deviceToken = pushNotificationManager.deviceToken else {
+            return
+        }
+
+        await appDataViewModel.registerPushTokenIfNeeded(
+            deviceToken: deviceToken,
+            bundleIdentifier: Bundle.main.bundleIdentifier ?? "",
+            environment: pushNotificationManager.apnsEnvironment
+        )
     }
 }
 
