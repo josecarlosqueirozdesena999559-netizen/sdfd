@@ -11,15 +11,28 @@ struct CreateRequisitionView: View {
 
     var body: some View {
         ScreenContainer(title: "", subtitle: "") {
-            categorySelectorCard
-
-            if let selectedMaterial {
-                itemRequestCard(for: selectedMaterial)
-            } else {
+            if appDataViewModel.materialTypes.isEmpty {
                 PrimaryCard {
-                    Text("Escolha uma categoria para ver os itens disponiveis.")
-                        .font(.system(size: 14, weight: .semibold))
+                    SectionHeader(
+                        title: "Sem categorias liberadas",
+                        subtitle: "Seu usuario ainda nao possui categorias disponiveis para requisicao."
+                    )
+
+                    Text("Entre em contato com o administrador para liberar as categorias no cadastro do usuario.")
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textMuted)
+                }
+            } else {
+                categorySelectorCard
+
+                if let selectedMaterial {
+                    itemRequestCard(for: selectedMaterial)
+                } else {
+                    PrimaryCard {
+                        Text("Escolha uma categoria para ver os itens disponiveis.")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(AppTheme.textMuted)
+                    }
                 }
             }
 
@@ -58,8 +71,8 @@ struct CreateRequisitionView: View {
     private var categorySelectorCard: some View {
         PrimaryCard {
             SectionHeader(
-                title: "Categorias",
-                subtitle: "Escolha o tipo de material para montar sua requisicao."
+                title: "Categorias do usuario",
+                subtitle: "Escolha uma categoria liberada no seu cadastro para montar a requisicao."
             )
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -101,7 +114,7 @@ struct CreateRequisitionView: View {
         PrimaryCard {
             SectionHeader(
                 title: "Itens de \(shortTitle(for: material))",
-                subtitle: "Informe o saldo atual e a quantidade solicitada de cada item."
+                subtitle: "Preencha a tabela e envie para gravar no banco que alimenta o PDF no site."
             )
 
             HStack(spacing: 12) {
@@ -121,8 +134,14 @@ struct CreateRequisitionView: View {
             )
 
             VStack(spacing: 14) {
-                ForEach(filteredItems(for: material)) { item in
-                    itemRow(for: item)
+                if filteredItems(for: material).isEmpty {
+                    Text("Nao existem itens cadastrados no banco para essa categoria.")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(AppTheme.textMuted)
+                } else {
+                    ForEach(filteredItems(for: material)) { item in
+                        itemRow(for: item)
+                    }
                 }
             }
 
@@ -295,7 +314,8 @@ struct CreateRequisitionView: View {
     }
 
     private func categoryItems(for material: MaterialType) -> [MaterialCatalogItem] {
-        appDataViewModel.catalogItems.filter { $0.categoryId == material.id }
+        let categoryId = material.id.normalizedSearchText
+        return appDataViewModel.catalogItems.filter { $0.categoryId.normalizedSearchText == categoryId }
     }
 
     private func feedbackCard(title: String, message: String, tint: Color, icon: String) -> some View {

@@ -5,8 +5,8 @@ final class AppDataViewModel: ObservableObject {
     @Published private(set) var profile: UserProfile?
     @Published private(set) var requisitions: [Requisition] = []
     @Published private(set) var summary: DashboardSummary = .empty
-    @Published private(set) var materialTypes: [MaterialType] = MockData.materialTypes
-    @Published private(set) var catalogItems: [MaterialCatalogItem] = MockData.catalogItems
+    @Published private(set) var materialTypes: [MaterialType] = []
+    @Published private(set) var catalogItems: [MaterialCatalogItem] = []
     @Published var isLoading = false
     @Published var createInProgress = false
     @Published var errorMessage: String?
@@ -45,15 +45,16 @@ final class AppDataViewModel: ObservableObject {
 
         do {
             let profile = try await databaseService.fetchUserProfile(session: userSession)
-            let requisitions = try await databaseService.fetchRequisitions(session: userSession, profile: profile)
+            async let requisitionsTask = databaseService.fetchRequisitions(session: userSession, profile: profile)
+            async let catalogItemsTask = databaseService.fetchCatalogItems(session: userSession, categories: profile.categoriasPermitidas)
+            let requisitions = try await requisitionsTask
+            let catalogItems = try await catalogItemsTask
 
             self.profile = profile
             self.requisitions = requisitions
             self.summary = Self.makeSummary(from: requisitions)
-            self.materialTypes = profile.categoriasPermitidas.isEmpty
-                ? MockData.materialTypes
-                : profile.categoriasPermitidas.map(MaterialType.fromCategory)
-            self.catalogItems = Self.filteredCatalogItems(for: self.materialTypes)
+            self.materialTypes = profile.categoriasPermitidas.map(MaterialType.fromCategory)
+            self.catalogItems = catalogItems
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -101,11 +102,5 @@ final class AppDataViewModel: ObservableObject {
             }.count,
             desktopSignatureCount: requisitions.filter(\.requiresDesktopSignature).count
         )
-    }
-
-    private static func filteredCatalogItems(for materialTypes: [MaterialType]) -> [MaterialCatalogItem] {
-        let ids = Set(materialTypes.map(\.id))
-        let filtered = MockData.catalogItems.filter { ids.contains($0.categoryId) }
-        return filtered.isEmpty ? MockData.catalogItems : filtered
     }
 }

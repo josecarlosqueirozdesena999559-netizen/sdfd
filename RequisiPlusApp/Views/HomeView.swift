@@ -31,7 +31,6 @@ struct HomeView: View {
                 heroCard
                 summaryRow
                 recentRequestsCard
-                nextStepsCard
             }
         }
     }
@@ -119,49 +118,6 @@ struct HomeView: View {
                     }
                 }
             }
-        }
-    }
-
-    private var nextStepsCard: some View {
-        PrimaryCard {
-            SectionHeader(
-                title: "Proximos passos",
-                subtitle: "Resumo rapido do que merece atencao no momento."
-            )
-
-            insightRow(
-                icon: "shippingbox",
-                title: "Em conferencia",
-                value: "\(appDataViewModel.summary.conferenceCount) item(ns)"
-            )
-
-            insightRow(
-                icon: "desktopcomputer",
-                title: "Assinatura no desktop",
-                value: "\(appDataViewModel.summary.desktopSignatureCount) pendencia(s)"
-            )
-        }
-    }
-
-    private func insightRow(icon: String, title: String, value: String) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(AppTheme.deepBlue)
-                .frame(width: 42, height: 42)
-                .background(AppTheme.skyBlue, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
-
-                Text(value)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AppTheme.textMuted)
-            }
-
-            Spacer()
         }
     }
 

@@ -28,7 +28,18 @@ struct MaterialCatalogItem: Identifiable, Hashable {
     let id: String
     let categoryId: String
     let name: String
-    let detail: String
+    let unit: String
+    let subcategory: String?
+
+    var detail: String {
+        let pieces = [subcategory, unit]
+            .compactMap { value in
+                guard let value, value.isEmpty == false else { return nil }
+                return value
+            }
+
+        return pieces.isEmpty ? "Sem detalhe complementar" : pieces.joined(separator: " • ")
+    }
 }
 
 struct RequestedItemEntry: Identifiable, Hashable {
@@ -82,26 +93,9 @@ extension MaterialType {
     }
 }
 
-enum MockData {
-    static let materialTypes: [MaterialType] = [
-        MaterialType(id: "Material de expediente", title: "Material de expediente", description: "Papel, canetas, pastas e itens de escritorio."),
-        MaterialType(id: "Material de limpeza", title: "Material de limpeza", description: "Saneantes, descartaveis e apoio operacional."),
-        MaterialType(id: "Insumos de saude", title: "Insumos de saude", description: "Itens hospitalares, consumo clinico e reposicao."),
-        MaterialType(id: "TI e perifericos", title: "TI e perifericos", description: "Acessorios, cabos, teclados e apoio tecnico.")
-    ]
-
-    static let catalogItems: [MaterialCatalogItem] = [
-        MaterialCatalogItem(id: "exp-1", categoryId: "Material de expediente", name: "Papel A4", detail: "Resma branca"),
-        MaterialCatalogItem(id: "exp-2", categoryId: "Material de expediente", name: "Caneta azul", detail: "Escritorio"),
-        MaterialCatalogItem(id: "exp-3", categoryId: "Material de expediente", name: "Pasta catalogo", detail: "Arquivo"),
-        MaterialCatalogItem(id: "limp-1", categoryId: "Material de limpeza", name: "Agua sanitaria", detail: "Limpeza geral"),
-        MaterialCatalogItem(id: "limp-2", categoryId: "Material de limpeza", name: "Papel toalha", detail: "Descartavel"),
-        MaterialCatalogItem(id: "limp-3", categoryId: "Material de limpeza", name: "Detergente", detail: "Copa e cozinha"),
-        MaterialCatalogItem(id: "saude-1", categoryId: "Insumos de saude", name: "Abaixador de lingua", detail: "Hospital"),
-        MaterialCatalogItem(id: "saude-2", categoryId: "Insumos de saude", name: "Agua oxigenada", detail: "Hospital"),
-        MaterialCatalogItem(id: "saude-3", categoryId: "Insumos de saude", name: "Agulha descartavel", detail: "Hospital"),
-        MaterialCatalogItem(id: "ti-1", categoryId: "TI e perifericos", name: "Mouse USB", detail: "Periferico"),
-        MaterialCatalogItem(id: "ti-2", categoryId: "TI e perifericos", name: "Teclado USB", detail: "Periferico"),
-        MaterialCatalogItem(id: "ti-3", categoryId: "TI e perifericos", name: "Cabo HDMI", detail: "Acessorio")
-    ]
+extension String {
+    var normalizedSearchText: String {
+        folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
