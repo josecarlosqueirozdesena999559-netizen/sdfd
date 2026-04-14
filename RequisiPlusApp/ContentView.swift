@@ -67,8 +67,8 @@ private struct DashboardView: View {
 
                 currentScreen
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.top, 8)
-                    .padding(.bottom, 110)
+                    .padding(.top, selectedSection == .chat ? 0 : 8)
+                    .padding(.bottom, selectedSection == .chat ? 86 : 110)
             }
 
             GlassTabBar(selectedSection: $selectedSection, availableSections: availableSections)

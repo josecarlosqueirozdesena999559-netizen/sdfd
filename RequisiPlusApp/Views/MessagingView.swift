@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct MessagingView: View {
     @EnvironmentObject private var appDataViewModel: AppDataViewModel
+    @FocusState private var isComposerFocused: Bool
     @State private var messageText = ""
     @State private var selectedThreadID: String?
     @State private var showingFileImporter = false
@@ -13,17 +14,17 @@ struct MessagingView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 if canSwitchThreads {
                     threadInboxCard(compact: geometry.size.width < 900)
                 }
 
-                conversationCard(maxHeight: geometry.size.height - (canSwitchThreads ? 220 : 32))
+                conversationCard
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 24)
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
             .background(AppTheme.background.ignoresSafeArea())
         }
         .fileImporter(
@@ -45,6 +46,7 @@ struct MessagingView: View {
             guard let newValue else { return }
             selectedThreadID = newValue
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
     private func threadInboxCard(compact: Bool) -> some View {
@@ -89,16 +91,17 @@ struct MessagingView: View {
         }
     }
 
-    private func conversationCard(maxHeight: CGFloat) -> some View {
+    private var conversationCard: some View {
         PrimaryCard(padding: 0) {
             if let selectedThread {
                 VStack(spacing: 0) {
                     conversationHeader(for: selectedThread)
                     Divider().overlay(AppTheme.fieldBorder)
-                    messagesPanel(maxHeight: max(260, maxHeight - 170))
+                    messagesPanel
                     Divider().overlay(AppTheme.fieldBorder)
                     composerBar
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Chat")
@@ -133,7 +136,7 @@ struct MessagingView: View {
         .background(AppTheme.surface)
     }
 
-    private func messagesPanel(maxHeight: CGFloat) -> some View {
+    private var messagesPanel: some View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 12) {
@@ -158,8 +161,11 @@ struct MessagingView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 14)
             }
-            .frame(maxHeight: maxHeight)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(LinearGradient(colors: [AppTheme.background, AppTheme.fieldFill], startPoint: .top, endPoint: .bottom))
+            .scrollDismissesKeyboard(.interactively)
+            .contentShape(Rectangle())
+            .onTapGesture { dismissKeyboard() }
             .onAppear { scrollToBottom(with: proxy) }
             .onChange(of: appDataViewModel.activeChatMessages.count) { _, _ in scrollToBottom(with: proxy) }
         }
@@ -189,11 +195,16 @@ struct MessagingView: View {
                     }
                     .buttonStyle(.plain)
 
-                    TextField("Digite uma mensagem", text: $messageText, axis: .vertical)
-                        .lineLimit(1...5)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .tint(AppTheme.deepBlue)
+                    if recorder.isRecording {
+                        recordingComposerContent
+                    } else {
+                        TextField("Digite uma mensagem", text: $messageText, axis: .vertical)
+                            .lineLimit(1...5)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(AppTheme.textPrimary)
+                            .tint(AppTheme.deepBlue)
+                            .focused($isComposerFocused)
+                    }
 
                     Button {
                         Task {
@@ -220,6 +231,7 @@ struct MessagingView: View {
                         await appDataViewModel.sendChatMessage(thread: selectedThread, text: messageText, attachmentUpload: pendingAttachment)
                         messageText = ""
                         pendingAttachment = nil
+                        dismissKeyboard()
                     }
                 } label: {
                     ZStack {
@@ -244,10 +256,44 @@ struct MessagingView: View {
         .background(AppTheme.surface)
     }
 
+    private var recordingComposerContent: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(AppTheme.danger)
+                    .frame(width: 8, height: 8)
+                Text("Gravando audio")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                Text(formatTime(recorder.recordingDuration))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AppTheme.textMuted)
+            }
+
+            ChatWaveformView(
+                levels: recorder.waveformLevels,
+                progress: 1,
+                activeColor: AppTheme.danger,
+                inactiveColor: AppTheme.danger.opacity(0.22),
+                mirrored: true
+            )
+            .frame(height: 34)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private func attachmentPreview(for attachment: ChatAttachmentUpload) -> some View {
         Group {
             if attachment.mimeType.hasPrefix("audio/") {
-                ChatAudioClipPlayer(source: .data(attachment.data, "m4a"), title: attachment.fileName, accentColor: AppTheme.primaryBlue, foregroundColor: AppTheme.textPrimary, backgroundColor: AppTheme.fieldFill)
+                ChatAudioClipPlayer(
+                    source: .data(attachment.data, "m4a"),
+                    title: "Audio",
+                    accentColor: AppTheme.primaryBlue,
+                    foregroundColor: AppTheme.textPrimary,
+                    backgroundColor: AppTheme.fieldFill,
+                    waveformLevels: recorder.lastRecordingLevels,
+                    preferredDuration: recorder.lastRecordingDuration
+                )
             } else {
                 HStack(spacing: 12) {
                     Image(systemName: "paperclip")
@@ -331,7 +377,7 @@ struct MessagingView: View {
     @ViewBuilder
     private func attachmentView(for attachment: ChatAttachment, isMine: Bool) -> some View {
         if attachment.isAudio {
-            ChatAudioClipPlayer(source: .remote(URL(string: attachment.fileURL)), title: attachment.fileName, accentColor: isMine ? .white : AppTheme.primaryBlue, foregroundColor: isMine ? .white : AppTheme.textPrimary, backgroundColor: isMine ? Color.white.opacity(0.16) : AppTheme.skyBlue.opacity(0.65))
+            ChatAudioClipPlayer(source: .remote(URL(string: attachment.fileURL)), title: "Audio", accentColor: isMine ? .white : AppTheme.primaryBlue, foregroundColor: isMine ? .white : AppTheme.textPrimary, backgroundColor: isMine ? Color.white.opacity(0.16) : AppTheme.skyBlue.opacity(0.65))
         } else if let attachmentURL = URL(string: attachment.fileURL) {
             Link(destination: attachmentURL) {
                 HStack(spacing: 10) {
@@ -364,10 +410,10 @@ struct MessagingView: View {
                             .lineLimit(1)
                         if thread.hasUnreadMessages { unreadBadge(count: thread.unreadCount) }
                     }
-                    Text(thread.lastMessagePreview)
+                    Text(displayPreviewText(for: thread.lastMessagePreview))
+                        .lineLimit(2)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textMuted)
-                        .lineLimit(2)
                 }
                 Spacer()
                 if let updatedAt = thread.updatedAt {
@@ -393,7 +439,7 @@ struct MessagingView: View {
                         .lineLimit(1)
                     if thread.hasUnreadMessages { unreadBadge(count: thread.unreadCount) }
                 }
-                Text(thread.lastMessagePreview)
+                Text(displayPreviewText(for: thread.lastMessagePreview))
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(2)
             }
@@ -434,7 +480,6 @@ struct MessagingView: View {
 
     private func conversationStatusText(for thread: ChatThread) -> String {
         if recorder.isRecording { return "Gravando audio..." }
-        if messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false { return "Digitando..." }
         if let lastSeenDate = latestSeenDate { return "Visto por ultimo \(lastSeenDescription(for: lastSeenDate))" }
         return thread.counterpartRole
     }
@@ -479,6 +524,16 @@ struct MessagingView: View {
         }
     }
 
+    private func dismissKeyboard() {
+        isComposerFocused = false
+    }
+
+    private func formatTime(_ value: TimeInterval) -> String {
+        guard value.isFinite else { return "00:00" }
+        let totalSeconds = Int(value.rounded())
+        return String(format: "%02d:%02d", totalSeconds / 60, totalSeconds % 60)
+    }
+
     private func shouldShowDayDivider(at index: Int) -> Bool {
         guard let currentDate = appDataViewModel.activeChatMessages[index].createdAt else { return index == 0 }
         guard index > 0, let previousDate = appDataViewModel.activeChatMessages[index - 1].createdAt else { return true }
@@ -489,6 +544,14 @@ struct MessagingView: View {
         let parts = name.split(separator: " ").prefix(2)
         let joined = parts.compactMap { $0.first }.map(String.init).joined()
         return joined.isEmpty ? "AD" : joined.uppercased()
+    }
+
+    private func displayPreviewText(for rawValue: String) -> String {
+        let normalized = rawValue.normalizedSearchText
+        if normalized == "audio.m4a" || normalized == "audio enviado" {
+            return "Audio"
+        }
+        return rawValue
     }
 
     private var canSwitchThreads: Bool { appDataViewModel.canCurrentUserSwitchChatThreads }
@@ -594,18 +657,30 @@ private struct ChatAudioClipPlayer: View {
     let accentColor: Color
     let foregroundColor: Color
     let backgroundColor: Color
+    let waveformLevels: [CGFloat]
+    let preferredDuration: TimeInterval?
     @StateObject private var controller: ChatAudioPlaybackController
 
-    init(source: ChatAudioSource, title: String, accentColor: Color, foregroundColor: Color, backgroundColor: Color) {
+    init(
+        source: ChatAudioSource,
+        title: String,
+        accentColor: Color,
+        foregroundColor: Color,
+        backgroundColor: Color,
+        waveformLevels: [CGFloat] = ChatWaveformView.defaultLevels,
+        preferredDuration: TimeInterval? = nil
+    ) {
         self.title = title
         self.accentColor = accentColor
         self.foregroundColor = foregroundColor
         self.backgroundColor = backgroundColor
+        self.waveformLevels = waveformLevels
+        self.preferredDuration = preferredDuration
         _controller = StateObject(wrappedValue: ChatAudioPlaybackController(source: source))
     }
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Button { controller.togglePlayback() } label: {
                 ZStack {
                     Circle().fill(accentColor.opacity(0.14)).frame(width: 36, height: 36)
@@ -621,20 +696,40 @@ private struct ChatAudioClipPlayer: View {
             .buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(foregroundColor)
-                    .lineLimit(1)
-                ProgressView(value: controller.duration == 0 ? 0 : controller.currentTime / max(controller.duration, 1))
-                    .tint(accentColor)
-                Text("\(formatTime(controller.currentTime)) / \(formatTime(controller.duration))")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(foregroundColor.opacity(0.78))
+                HStack(spacing: 8) {
+                    Text(title)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(foregroundColor)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    Text("\(formatTime(controller.currentTime)) / \(formatTime(displayDuration))")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(foregroundColor.opacity(0.78))
+                }
+
+                ChatWaveformView(
+                    levels: waveformLevels,
+                    progress: playbackProgress,
+                    activeColor: accentColor,
+                    inactiveColor: foregroundColor.opacity(0.22),
+                    mirrored: false
+                )
+                .frame(height: 28)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(backgroundColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var displayDuration: TimeInterval {
+        if controller.duration > 0 { return controller.duration }
+        return preferredDuration ?? 0
+    }
+
+    private var playbackProgress: CGFloat {
+        guard displayDuration > 0 else { return controller.isPlaying ? 0.08 : 0 }
+        return CGFloat(min(max(controller.currentTime / displayDuration, 0), 1))
     }
 
     private func formatTime(_ value: TimeInterval) -> String {
@@ -644,11 +739,49 @@ private struct ChatAudioClipPlayer: View {
     }
 }
 
+private struct ChatWaveformView: View {
+    let levels: [CGFloat]
+    let progress: CGFloat
+    let activeColor: Color
+    let inactiveColor: Color
+    let mirrored: Bool
+
+    static let defaultLevels: [CGFloat] = [
+        7, 11, 15, 10, 18, 22, 16, 12, 20, 25, 17, 13, 21, 26, 19, 12,
+        9, 14, 23, 17, 12, 20, 24, 16, 11, 18, 22, 15, 10, 16, 13, 9
+    ]
+
+    var body: some View {
+        GeometryReader { geometry in
+            let count = max(levels.count, 1)
+            let totalSpacing = CGFloat(count - 1) * 3
+            let barWidth = max((geometry.size.width - totalSpacing) / CGFloat(count), 2)
+            let highlightedBars = Int(round(CGFloat(count) * min(max(progress, 0), 1)))
+
+            HStack(alignment: .center, spacing: 3) {
+                ForEach(Array(levels.enumerated()), id: \.offset) { index, level in
+                    Capsule()
+                        .fill(index < highlightedBars ? activeColor : inactiveColor)
+                        .frame(width: barWidth, height: max(6, level))
+                        .frame(maxHeight: .infinity, alignment: .center)
+                        .scaleEffect(x: 1, y: mirrored ? -1 : 1, anchor: .center)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
+    }
+}
+
 @MainActor
 final class ChatAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     @Published private(set) var isRecording = false
+    @Published private(set) var waveformLevels = Array(repeating: CGFloat(6), count: 32)
+    @Published private(set) var recordingDuration: TimeInterval = 0
+    @Published private(set) var lastRecordingLevels = ChatWaveformView.defaultLevels
+    @Published private(set) var lastRecordingDuration: TimeInterval = 0
     private var audioRecorder: AVAudioRecorder?
     private var currentURL: URL?
+    private var meterTimer: Timer?
 
     func startRecording() async throws {
         let session = AVAudioSession.sharedInstance()
@@ -669,17 +802,25 @@ final class ChatAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelega
 
         audioRecorder = try AVAudioRecorder(url: url, settings: settings)
         audioRecorder?.delegate = self
+        audioRecorder?.isMeteringEnabled = true
+        audioRecorder?.prepareToRecord()
         audioRecorder?.record()
         currentURL = url
+        waveformLevels = Array(repeating: CGFloat(6), count: 32)
+        recordingDuration = 0
         isRecording = true
+        startMetering()
     }
 
     func stopRecording() async throws -> ChatAttachmentUpload? {
+        stopMetering()
         audioRecorder?.stop()
         isRecording = false
 
         guard let currentURL else { return nil }
         let data = try Data(contentsOf: currentURL)
+        lastRecordingLevels = waveformLevels
+        lastRecordingDuration = recordingDuration
         self.currentURL = nil
         return ChatAttachmentUpload(fileName: "audio.m4a", mimeType: "audio/m4a", data: data)
     }
@@ -690,6 +831,29 @@ final class ChatAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelega
                 continuation.resume(returning: granted)
             }
         }
+    }
+
+    private func startMetering() {
+        stopMetering()
+        meterTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            guard let self, let audioRecorder else { return }
+            audioRecorder.updateMeters()
+            self.recordingDuration = audioRecorder.currentTime
+            self.waveformLevels.removeFirst()
+            self.waveformLevels.append(self.normalizePower(audioRecorder.averagePower(forChannel: 0)))
+        }
+    }
+
+    private func stopMetering() {
+        meterTimer?.invalidate()
+        meterTimer = nil
+    }
+
+    private func normalizePower(_ power: Float) -> CGFloat {
+        let minDb: Float = -60
+        let clamped = max(power, minDb)
+        let normalized = (clamped - minDb) / abs(minDb)
+        return max(6, CGFloat(normalized) * 28)
     }
 }
 
