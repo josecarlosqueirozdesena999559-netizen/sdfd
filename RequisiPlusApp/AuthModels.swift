@@ -93,7 +93,18 @@ struct AuthErrorResponse: Decodable {
     }
 
     var readableMessage: String {
-        errorDescription ?? msg ?? message ?? error ?? "Nao foi possivel concluir a autenticacao."
+        let rawMessage = errorDescription ?? msg ?? message ?? error ?? "Nao foi possivel concluir a autenticacao."
+        let normalized = rawMessage.lowercased()
+
+        if normalized.contains("invalid login credentials") || normalized == "not found" {
+            return "E-mail ou senha invalidos."
+        }
+
+        if normalized.contains("email not confirmed") {
+            return "Confirme seu e-mail antes de entrar."
+        }
+
+        return rawMessage
     }
 }
 
