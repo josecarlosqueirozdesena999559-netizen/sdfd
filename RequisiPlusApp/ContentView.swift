@@ -1,9 +1,9 @@
 import SwiftUI
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case inicio = "Início"
-    case fazerRequisicao = "Fazer requisição"
-    case verRequisicoes = "Ver requisições"
+    case inicio = "Inicio"
+    case fazerRequisicao = "Fazer requisicao"
+    case verRequisicoes = "Ver requisicoes"
     case perfil = "Perfil"
 
     var id: String { rawValue }
@@ -12,7 +12,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .inicio: return "house"
         case .fazerRequisicao: return "square.and.pencil"
-        case .verRequisicoes: return "list.bullet.clipboard"
+        case .verRequisicoes: return "clipboard.text"
         case .perfil: return "person.crop.circle"
         }
     }
@@ -37,24 +37,28 @@ struct ContentView: View {
 private struct DashboardView: View {
     @StateObject private var appDataViewModel: AppDataViewModel
     @State private var selectedSection: AppSection = .inicio
-    @State private var isSidebarVisible = false
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(session: UserSession) {
         _appDataViewModel = StateObject(wrappedValue: AppDataViewModel(userSession: session))
     }
 
-    private var isCompact: Bool { horizontalSizeClass == .compact }
-
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             AppTheme.backgroundGradient.ignoresSafeArea()
 
-            if isCompact {
-                compactLayout
-            } else {
-                regularLayout
+            VStack(spacing: 0) {
+                MobileHeader(title: selectedSection.rawValue)
+
+                currentScreen
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 2)
+                    .padding(.bottom, 116)
             }
+
+            GlassTabBar(selectedSection: $selectedSection)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
         }
         .task {
             if appDataViewModel.profile == nil && appDataViewModel.isLoading == false {
@@ -62,57 +66,6 @@ private struct DashboardView: View {
             }
         }
         .environmentObject(appDataViewModel)
-    }
-
-    private var regularLayout: some View {
-        HStack(spacing: 24) {
-            SidebarMenu(selectedSection: $selectedSection)
-                .frame(width: 280)
-
-            currentScreen
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .padding(24)
-    }
-
-    private var compactLayout: some View {
-        ZStack(alignment: .leading) {
-            VStack(spacing: 0) {
-                MobileHeader(isSidebarVisible: $isSidebarVisible, title: selectedSection.rawValue)
-
-                currentScreen
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 96)
-            }
-
-            if isSidebarVisible {
-                Color.black.opacity(0.2)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                            isSidebarVisible = false
-                        }
-                    }
-
-                SidebarMenu(selectedSection: $selectedSection, showsCloseButton: true) {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                        isSidebarVisible = false
-                    }
-                }
-                .frame(width: 290)
-                .padding(.leading, 12)
-                .transition(.move(edge: .leading).combined(with: .opacity))
-            }
-
-            VStack {
-                Spacer()
-                GlassTabBar(selectedSection: $selectedSection)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
-            }
-        }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isSidebarVisible)
     }
 
     @ViewBuilder
@@ -149,41 +102,39 @@ private struct SessionLoadingView: View {
 }
 
 private struct MobileHeader: View {
-    @Binding var isSidebarVisible: Bool
     let title: String
 
     var body: some View {
-        HStack(spacing: 12) {
-            Button {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                    isSidebarVisible.toggle()
-                }
-            } label: {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(AppTheme.deepBlue)
-                    .frame(width: 44, height: 44)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(AppTheme.whiteOverlay, lineWidth: 1)
-                    )
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("requisi+")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(AppTheme.primaryBlue)
 
                 Text(title)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(AppTheme.deepBlue)
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
             }
 
             Spacer()
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 18)
         .padding(.top, 8)
-        .padding(.bottom, 12)
+        .padding(.bottom, 8)
+    }
+}
+
+extension AppSection {
+    var tabTitle: String {
+        switch self {
+        case .inicio:
+            return "Inicio"
+        case .fazerRequisicao:
+            return "Requisicao"
+        case .verRequisicoes:
+            return "Historico"
+        case .perfil:
+            return "Perfil"
+        }
     }
 }
