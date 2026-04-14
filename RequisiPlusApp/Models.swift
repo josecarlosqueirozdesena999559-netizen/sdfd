@@ -35,11 +35,11 @@ struct MaterialCatalogItem: Identifiable, Hashable {
         var pieces: [String] = []
 
         if let subcategory, subcategory.isEmpty == false {
-            pieces.append(subcategory)
+            pieces.append(subcategory.replacingOccurrences(of: "_", with: " "))
         }
 
         if unit.isEmpty == false {
-            pieces.append(unit)
+            pieces.append(unit.replacingOccurrences(of: "_", with: " "))
         }
 
         return pieces.isEmpty ? "Sem detalhes" : pieces.joined(separator: " | ")
@@ -89,9 +89,13 @@ extension Requisition {
 
 extension MaterialType {
     static func fromCategory(_ category: String) -> MaterialType {
+        let formattedTitle = category
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
         MaterialType(
             id: category,
-            title: category,
+            title: formattedTitle,
             description: "Categoria liberada."
         )
     }

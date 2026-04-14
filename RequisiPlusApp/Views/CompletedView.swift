@@ -5,7 +5,6 @@ struct CreateRequisitionView: View {
 
     @State private var selectedMaterial: MaterialType?
     @State private var searchText = ""
-    @State private var observation = ""
     @State private var currentBalances: [String: String] = [:]
     @State private var requestedQuantities: [String: String] = [:]
 
@@ -144,34 +143,16 @@ struct CreateRequisitionView: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Observacao")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
-
-                TextField("Adicione uma observacao, se precisar", text: $observation, axis: .vertical)
-                    .lineLimit(3, reservesSpace: true)
-                    .padding(16)
-                    .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(AppTheme.fieldBorder, lineWidth: 1)
-                    )
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .tint(AppTheme.deepBlue)
-            }
-
             Button {
                 Task {
                     await appDataViewModel.createRequisition(
                         materialType: material,
                         entries: selectedEntries(for: material),
-                        observation: observation
+                        observation: ""
                     )
                     if appDataViewModel.successMessage != nil {
                         currentBalances = [:]
                         requestedQuantities = [:]
-                        observation = ""
                     }
                 }
             } label: {
@@ -299,6 +280,7 @@ struct CreateRequisitionView: View {
         material.title
             .replacingOccurrences(of: "Material de ", with: "")
             .replacingOccurrences(of: "Insumos de ", with: "")
+            .replacingOccurrences(of: "_", with: " ")
     }
 
     private func categoryBackground(isSelected: Bool) -> some View {

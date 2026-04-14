@@ -50,7 +50,7 @@ struct HomeView: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.82))
 
-                Text(appDataViewModel.summary.pendingCount > 0 ? "Requisicoes pendentes" : "Tudo em dia")
+                Text(homeHeadline)
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(.white)
 
@@ -150,5 +150,17 @@ struct HomeView: View {
 
     private var recentRequisitions: [Requisition] {
         Array(appDataViewModel.requisitions.prefix(3))
+    }
+
+    private var homeHeadline: String {
+        if appDataViewModel.summary.desktopSignatureCount > 0 {
+            return "Voce tem assinaturas pendentes"
+        }
+
+        if appDataViewModel.summary.pendingCount == 0 {
+            return "Voce nao tem pendencias"
+        }
+
+        return "Requisicoes pendentes"
     }
 }

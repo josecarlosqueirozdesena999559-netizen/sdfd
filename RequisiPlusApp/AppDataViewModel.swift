@@ -14,13 +14,22 @@ final class AppDataViewModel: ObservableObject {
 
     private let userSession: UserSession
     private let databaseService: SupabaseDatabaseService
+    private let realtimeService: SupabaseRealtimeService
 
     init(
         userSession: UserSession,
-        databaseService: SupabaseDatabaseService = SupabaseDatabaseService()
+        databaseService: SupabaseDatabaseService = SupabaseDatabaseService(),
+        realtimeService: SupabaseRealtimeService = SupabaseRealtimeService()
     ) {
         self.userSession = userSession
         self.databaseService = databaseService
+        self.realtimeService = realtimeService
+
+        self.realtimeService.start(session: userSession) { [weak self] in
+            Task {
+                await self?.refreshFromRealtime()
+            }
+        }
     }
 
     var dashboardAlert: DashboardAlert {
@@ -36,13 +45,13 @@ final class AppDataViewModel: ObservableObject {
     }
 
     func load() async {
-        isLoading = true
-        errorMessage = nil
+        await performLoad(showLoading: true)
+    }
 
-        defer {
-            isLoading = false
+    private func performLoad(showLoading: Bool) async {
+        if showLoading {
+            isLoading = true
         }
-
         do {
             let profile = try await databaseService.fetchUserProfile(session: userSession)
             async let requisitionsTask = databaseService.fetchRequisitions(session: userSession, profile: profile)
@@ -55,8 +64,13 @@ final class AppDataViewModel: ObservableObject {
             self.summary = Self.makeSummary(from: requisitions)
             self.materialTypes = profile.categoriasPermitidas.map(MaterialType.fromCategory)
             self.catalogItems = catalogItems
+            self.errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
+        }
+
+        if showLoading {
+            isLoading = false
         }
     }
 
@@ -102,5 +116,14 @@ final class AppDataViewModel: ObservableObject {
             }.count,
             desktopSignatureCount: requisitions.filter(\.requiresDesktopSignature).count
         )
+    }
+
+    private func refreshFromRealtime() async {
+        guard createInProgress == false else { return }
+        await performLoad(showLoading: false)
+    }
+
+    deinit {
+        realtimeService.stop()
     }
 }

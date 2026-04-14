@@ -26,6 +26,7 @@
 		B10000060000000000000001 /* SecureSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000060000000000000001 /* SecureSessionStore.swift */; };
 		D10000010000000000000001 /* SupabaseDatabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000010000000000000001 /* SupabaseDatabaseService.swift */; };
 		D10000020000000000000001 /* AppDataViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000020000000000000001 /* AppDataViewModel.swift */; };
+		D10000030000000000000001 /* SupabaseRealtimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000030000000000000001 /* SupabaseRealtimeService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,6 +51,7 @@
 		C10000060000000000000001 /* SecureSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureSessionStore.swift; sourceTree = "<group>"; };
 		E10000010000000000000001 /* SupabaseDatabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseDatabaseService.swift; sourceTree = "<group>"; };
 		E10000020000000000000001 /* AppDataViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDataViewModel.swift; sourceTree = "<group>"; };
+		E10000030000000000000001 /* SupabaseRealtimeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseRealtimeService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,6 +87,7 @@
 				C10000060000000000000001 /* SecureSessionStore.swift */,
 				E10000010000000000000001 /* SupabaseDatabaseService.swift */,
 				E10000020000000000000001 /* AppDataViewModel.swift */,
+				E10000030000000000000001 /* SupabaseRealtimeService.swift */,
 				A10000330000000000000001 /* Components */,
 				A10000340000000000000001 /* Views */,
 				A100001B0000000000000001 /* Assets.xcassets */,
@@ -209,6 +212,7 @@
 				B10000060000000000000001 /* SecureSessionStore.swift in Sources */,
 				D10000010000000000000001 /* SupabaseDatabaseService.swift in Sources */,
 				D10000020000000000000001 /* AppDataViewModel.swift in Sources */,
+				D10000030000000000000001 /* SupabaseRealtimeService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
