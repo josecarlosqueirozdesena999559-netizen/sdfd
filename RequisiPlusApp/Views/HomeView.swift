@@ -5,10 +5,7 @@ struct HomeView: View {
     @Binding var selectedSection: AppSection
 
     var body: some View {
-        ScreenContainer(
-            title: "",
-            subtitle: ""
-        ) {
+        ScreenContainer(title: "", subtitle: "") {
             if let errorMessage = appDataViewModel.errorMessage, errorMessage.isEmpty == false {
                 PrimaryCard {
                     SectionHeader(title: "Falha ao carregar", subtitle: "Nao foi possivel atualizar seus dados agora.")
@@ -31,61 +28,61 @@ struct HomeView: View {
                     }
                 }
             } else {
-                statusCard
+                heroCard
                 summaryRow
                 recentRequestsCard
+                nextStepsCard
             }
         }
     }
 
-    private var statusCard: some View {
-        PrimaryCard {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(appDataViewModel.summary.pendingCount > 0 ? "Pendencias" : "Tudo em dia")
+    private var heroCard: some View {
+        ZStack(alignment: .topTrailing) {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(AppTheme.heroGradient)
+
+            Circle()
+                .fill(Color.white.opacity(0.10))
+                .frame(width: 150, height: 150)
+                .offset(x: 28, y: -32)
+
+            VStack(alignment: .leading, spacing: 18) {
+                Text(appDataViewModel.summary.pendingCount > 0 ? "Painel ativo" : "Tudo organizado")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(AppTheme.primaryBlue)
+                    .foregroundStyle(Color.white.opacity(0.82))
 
-                Text(appDataViewModel.summary.pendingCount > 0 ? "Voce tem requisicoes pendentes" : "Sem pendencias no momento")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
+                Text(appDataViewModel.summary.pendingCount > 0 ? "Voce tem requisicoes aguardando retorno" : "Sua area esta em dia")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(.white)
 
                 Text(appDataViewModel.summary.pendingCount > 0
-                     ? "Acompanhe suas solicitacoes em andamento e resolva o que estiver faltando."
-                     : "Suas requisicoes estao organizadas. Abra uma nova quando precisar.")
+                     ? "Acompanhe os pedidos em andamento e avance nas proximas acoes sem perder contexto."
+                     : "Use a area de requisicao para registrar uma nova solicitacao quando precisar.")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(AppTheme.textMuted)
+                    .foregroundStyle(Color.white.opacity(0.86))
                     .fixedSize(horizontal: false, vertical: true)
-            }
 
-            HStack(spacing: 10) {
-                Button {
-                    selectedSection = appDataViewModel.summary.pendingCount > 0 ? .verRequisicoes : .fazerRequisicao
-                } label: {
-                    Text(appDataViewModel.summary.pendingCount > 0 ? "Ver requisicoes" : "Nova requisicao")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 12)
-                        .background(
-                            LinearGradient(
-                                colors: [AppTheme.deepBlue, AppTheme.primaryBlue],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        )
+                HStack(spacing: 12) {
+                    Button {
+                        selectedSection = appDataViewModel.summary.pendingCount > 0 ? .verRequisicoes : .fazerRequisicao
+                    } label: {
+                        Text(appDataViewModel.summary.pendingCount > 0 ? "Ver requisicoes" : "Nova requisicao")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(AppTheme.deepBlue)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 12)
+                            .background(Color.white, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+
+                    Text("\(appDataViewModel.requisitions.count) registro(s) carregados")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.white.opacity(0.8))
                 }
-                .buttonStyle(.plain)
-
-                Text(appDataViewModel.summary.pendingCount > 0
-                     ? "\(appDataViewModel.summary.pendingCount) item(ns) aguardando retorno."
-                     : "Tudo organizado para o seu dia.")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AppTheme.textMuted)
-
-                Spacer()
             }
+            .padding(24)
         }
+        .shadow(color: AppTheme.deepBlue.opacity(0.16), radius: 18, x: 0, y: 10)
     }
 
     private var summaryRow: some View {
@@ -116,40 +113,84 @@ struct HomeView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AppTheme.textMuted)
             } else {
-                VStack(spacing: 12) {
+                VStack(spacing: 14) {
                     ForEach(recentRequisitions) { requisition in
-                        HStack(spacing: 12) {
-                            Rectangle()
-                                .fill(AppTheme.deepBlue)
-                                .frame(width: 4, height: 44)
-                                .padding(.trailing, 2)
-                                .overlay(
-                                    Color.clear
-                                )
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(requisition.materialType)
-                                    .font(.system(size: 15, weight: .bold))
-                                    .foregroundStyle(AppTheme.textPrimary)
-
-                                Text("Numero \(requisition.code)")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundStyle(AppTheme.primaryBlue)
-
-                                Text(requisition.date)
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(AppTheme.textMuted)
-                            }
-
-                            Spacer()
-
-                            StatusBadge(status: requisition.statusDisplay)
-                        }
-                        .padding(.vertical, 4)
+                        requisitionRow(requisition)
                     }
                 }
             }
         }
+    }
+
+    private var nextStepsCard: some View {
+        PrimaryCard {
+            SectionHeader(
+                title: "Proximos passos",
+                subtitle: "Resumo rapido do que merece atencao no momento."
+            )
+
+            insightRow(
+                icon: "shippingbox",
+                title: "Em conferencia",
+                value: "\(appDataViewModel.summary.conferenceCount) item(ns)"
+            )
+
+            insightRow(
+                icon: "desktopcomputer",
+                title: "Assinatura no desktop",
+                value: "\(appDataViewModel.summary.desktopSignatureCount) pendencia(s)"
+            )
+        }
+    }
+
+    private func insightRow(icon: String, title: String, value: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(AppTheme.deepBlue)
+                .frame(width: 42, height: 42)
+                .background(AppTheme.skyBlue, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+
+                Text(value)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AppTheme.textMuted)
+            }
+
+            Spacer()
+        }
+    }
+
+    private func requisitionRow(_ requisition: Requisition) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(AppTheme.deepBlue)
+                .frame(width: 5, height: 56)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(requisition.materialType)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+
+                Text("Numero \(requisition.code)")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(AppTheme.primaryBlue)
+
+                Text(requisition.date)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(AppTheme.textMuted)
+            }
+
+            Spacer()
+
+            StatusBadge(status: requisition.statusDisplay)
+        }
+        .padding(16)
+        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var completedCount: Int {

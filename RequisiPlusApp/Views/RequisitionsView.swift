@@ -17,6 +17,11 @@ struct RequisitionsView: View {
 
     private var searchCard: some View {
         PrimaryCard {
+            SectionHeader(
+                title: "Historico de requisicoes",
+                subtitle: "Busque por material, codigo ou status para localizar um pedido."
+            )
+
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(AppTheme.textMuted)
@@ -27,9 +32,9 @@ struct RequisitionsView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 54)
-            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(AppTheme.fieldBorder, lineWidth: 1)
             )
 
@@ -44,7 +49,7 @@ struct RequisitionsView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .background(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                RoundedRectangle(cornerRadius: 999, style: .continuous)
                                     .fill(selectedFilter == filter ? AppTheme.deepBlue : AppTheme.primaryBlue.opacity(0.08))
                             )
                     }
@@ -59,7 +64,7 @@ struct RequisitionsView: View {
     private var listCard: some View {
         PrimaryCard {
             SectionHeader(
-                title: "Historico",
+                title: "Resultados",
                 subtitle: filteredRequisitions.isEmpty ? "Nenhuma requisicao encontrada." : "\(filteredRequisitions.count) resultado(s) encontrado(s)."
             )
 
@@ -78,10 +83,10 @@ struct RequisitionsView: View {
     }
 
     private func requisitionRow(_ requisition: Requisition) -> some View {
-            HStack(alignment: .top, spacing: 14) {
-            Rectangle()
+        HStack(alignment: .top, spacing: 14) {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
                 .fill(AppTheme.deepBlue)
-                .frame(width: 4, height: 44)
+                .frame(width: 5, height: 52)
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top) {
@@ -109,9 +114,9 @@ struct RequisitionsView: View {
             }
         }
         .padding(16)
-        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AppTheme.fieldBorder.opacity(0.8), lineWidth: 1)
         )
     }
@@ -177,7 +182,7 @@ struct StatusBadge: View {
             .foregroundStyle(tint)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .background(tint.opacity(0.12), in: Capsule())
     }
 
     private var normalized: String {
@@ -202,7 +207,7 @@ struct StatusBadge: View {
         }
 
         if statusLabel == "Em andamento" {
-            return Color.orange.opacity(0.90)
+            return AppTheme.warning
         }
 
         return AppTheme.primaryBlue

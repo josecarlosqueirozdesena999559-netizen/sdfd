@@ -44,15 +44,14 @@ private struct DashboardView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color(hex: "#F3F6FB").ignoresSafeArea()
+            AppTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 MobileHeader(title: selectedSection.rawValue)
 
                 currentScreen
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal, 18)
-                    .padding(.top, 12)
+                    .padding(.top, 8)
                     .padding(.bottom, 110)
             }
 
@@ -86,7 +85,7 @@ private struct DashboardView: View {
 private struct SessionLoadingView: View {
     var body: some View {
         ZStack {
-            Color(hex: "#F3F6FB").ignoresSafeArea()
+            AppTheme.background.ignoresSafeArea()
 
             VStack(spacing: 16) {
                 ProgressView()
@@ -119,14 +118,10 @@ private struct MobileHeader: View {
             Spacer()
         }
         .padding(.horizontal, 18)
-        .padding(.top, 12)
-        .padding(.bottom, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 22)
         .background(
-            LinearGradient(
-                colors: [AppTheme.deepBlue, AppTheme.midBlue],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            AppTheme.heroGradient
             .ignoresSafeArea(edges: .top)
         )
     }

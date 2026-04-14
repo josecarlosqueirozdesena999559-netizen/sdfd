@@ -74,18 +74,20 @@ struct CreateRequisitionView: View {
                                 .foregroundStyle(selectedMaterial == material ? .white : AppTheme.textPrimary)
                                 .multilineTextAlignment(.leading)
 
+                            Text(material.description)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(selectedMaterial == material ? Color.white.opacity(0.78) : AppTheme.textMuted)
+                                .lineLimit(2)
+
                             Text("\(filteredCatalogCount(for: material)) itens")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(selectedMaterial == material ? Color.white.opacity(0.84) : AppTheme.textMuted)
                         }
                         .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
                         .padding(.horizontal, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(selectedMaterial == material ? AppTheme.deepBlue : Color.white)
-                        )
+                        .background(categoryBackground(isSelected: selectedMaterial == material))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
                                 .stroke(selectedMaterial == material ? AppTheme.deepBlue : AppTheme.fieldBorder, lineWidth: 1)
                         )
                     }
@@ -112,9 +114,9 @@ struct CreateRequisitionView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 54)
-            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(AppTheme.fieldBorder, lineWidth: 1)
             )
 
@@ -132,9 +134,9 @@ struct CreateRequisitionView: View {
                 TextField("Adicione uma observacao, se precisar", text: $observation, axis: .vertical)
                     .lineLimit(3, reservesSpace: true)
                     .padding(16)
-                    .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(AppTheme.fieldBorder, lineWidth: 1)
                     )
                     .foregroundStyle(AppTheme.textPrimary)
@@ -168,12 +170,8 @@ struct CreateRequisitionView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(
-                    LinearGradient(
-                        colors: [AppTheme.deepBlue, AppTheme.primaryBlue],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    AppTheme.heroGradient,
+                    in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                 )
             }
             .buttonStyle(.plain)
@@ -215,9 +213,9 @@ struct CreateRequisitionView: View {
             }
         }
         .padding(16)
-        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AppTheme.fieldBorder, lineWidth: 1)
         )
     }
@@ -232,9 +230,9 @@ struct CreateRequisitionView: View {
                 .keyboardType(.decimalPad)
                 .padding(.horizontal, 12)
                 .frame(height: 44)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .stroke(AppTheme.fieldBorder, lineWidth: 1)
                 )
                 .foregroundStyle(AppTheme.textPrimary)
@@ -285,6 +283,17 @@ struct CreateRequisitionView: View {
             .replacingOccurrences(of: "Insumos de ", with: "")
     }
 
+    private func categoryBackground(isSelected: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(isSelected ? Color.clear : Color.white)
+            .overlay {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(AppTheme.heroGradient)
+                }
+            }
+    }
+
     private func categoryItems(for material: MaterialType) -> [MaterialCatalogItem] {
         appDataViewModel.catalogItems.filter { $0.categoryId == material.id }
     }
@@ -296,7 +305,7 @@ struct CreateRequisitionView: View {
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(tint)
                     .frame(width: 34, height: 34)
-                    .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(title)

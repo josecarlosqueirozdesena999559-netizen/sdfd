@@ -17,37 +17,38 @@ struct ProfileView: View {
 
     private var identityCard: some View {
         PrimaryCard {
-            HStack(spacing: 16) {
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [AppTheme.deepBlue, AppTheme.primaryBlue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 16) {
+                    Circle()
+                        .fill(AppTheme.heroGradient)
+                        .frame(width: 74, height: 74)
+                        .overlay(
+                            Text(initials)
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundStyle(.white)
                         )
-                    )
-                    .frame(width: 68, height: 68)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 26, weight: .semibold))
-                            .foregroundStyle(.white)
-                    )
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(appDataViewModel.profile?.name ?? authViewModel.displayName)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(appDataViewModel.profile?.name ?? authViewModel.displayName)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
 
-                    Text(appDataViewModel.profile?.funcao ?? "Usuario")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(AppTheme.textMuted)
+                        Text(appDataViewModel.profile?.funcao ?? "Usuario")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(AppTheme.textMuted)
 
-                    Text(appDataViewModel.profile?.email ?? authViewModel.email)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(AppTheme.primaryBlue)
+                        Text(appDataViewModel.profile?.email ?? authViewModel.email)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(AppTheme.primaryBlue)
+                    }
+
+                    Spacer()
                 }
 
-                Spacer()
+                HStack(spacing: 12) {
+                    profilePill(title: "Setor", value: appDataViewModel.profile?.setor ?? "Nao informado")
+                    profilePill(title: "Perfil", value: appDataViewModel.profile?.role ?? "Usuario")
+                }
             }
         }
     }
@@ -73,12 +74,9 @@ struct ProfileView: View {
 
     private func infoRow(icon: String, title: String, value: String) -> some View {
         HStack(spacing: 14) {
-            Rectangle()
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
                 .fill(AppTheme.deepBlue)
-                .frame(width: 4, height: 36)
-                .overlay(
-                    Color.clear
-                )
+                .frame(width: 5, height: 40)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
@@ -107,19 +105,43 @@ struct ProfileView: View {
         } label: {
             Text("Sair da conta")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(.red.opacity(0.85))
+                .foregroundStyle(AppTheme.danger)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(.white)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.red.opacity(0.14), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(AppTheme.danger.opacity(0.14), lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
         .padding(.bottom, 24)
+    }
+
+    private var initials: String {
+        let source = appDataViewModel.profile?.name ?? authViewModel.displayName
+        let parts = source.split(separator: " ")
+        let first = parts.first?.first.map(String.init) ?? "U"
+        let second = parts.dropFirst().first?.first.map(String.init) ?? ""
+        return first + second
+    }
+
+    private func profilePill(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(AppTheme.textMuted)
+
+            Text(value)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }

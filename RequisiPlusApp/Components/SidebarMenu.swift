@@ -4,7 +4,7 @@ struct GlassTabBar: View {
     @Binding var selectedSection: AppSection
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             ForEach(AppSection.allCases) { section in
                 Button {
                     selectedSection = section
@@ -20,9 +20,9 @@ struct GlassTabBar: View {
                     }
                     .foregroundStyle(selectedSection == section ? AppTheme.deepBlue : AppTheme.textMuted)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(height: 52)
                     .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(selectedSection == section ? Color.white : Color.clear)
                     )
                 }
@@ -32,13 +32,13 @@ struct GlassTabBar: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 7)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(hex: "#D1D5DB").opacity(0.96))
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.white.opacity(0.94))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.55), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(AppTheme.panelBorder.opacity(0.95), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(0.10), radius: 10, x: 0, y: 6)
+                .shadow(color: Color.black.opacity(0.10), radius: 18, x: 0, y: 8)
         )
     }
 }

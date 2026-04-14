@@ -4,15 +4,22 @@ enum AppTheme {
     static let deepBlue = Color(hex: "#0A1F44")
     static let midBlue = Color(hex: "#153B7A")
     static let primaryBlue = Color(hex: "#2C63FF")
+    static let skyBlue = Color(hex: "#DCE9FF")
     static let textPrimary = Color(hex: "#111827")
     static let textMuted = Color(hex: "#6B7280")
+    static let textSoft = Color(hex: "#94A3B8")
     static let fieldFill = Color(hex: "#F8FAFC")
     static let fieldBorder = Color(hex: "#D9E2F1")
+    static let panelBorder = Color(hex: "#E2E8F0")
+    static let background = Color(hex: "#F3F6FB")
+    static let surface = Color.white
     static let softBlue = Color(red: 0.84, green: 0.92, blue: 1.0)
     static let cardBlue = Color(red: 0.92, green: 0.96, blue: 1.0)
     static let warmAlert = Color(red: 0.98, green: 0.93, blue: 0.80)
     static let warmAlertBorder = Color(red: 0.90, green: 0.76, blue: 0.36)
     static let success = Color(red: 0.21, green: 0.65, blue: 0.44)
+    static let warning = Color(red: 0.96, green: 0.62, blue: 0.19)
+    static let danger = Color(red: 0.88, green: 0.25, blue: 0.25)
     static let whiteOverlay = Color.white.opacity(0.52)
 
     static let backgroundGradient = LinearGradient(
@@ -23,6 +30,12 @@ enum AppTheme {
 
     static let sidebarGradient = LinearGradient(
         colors: [deepBlue.opacity(0.92), primaryBlue.opacity(0.80)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let heroGradient = LinearGradient(
+        colors: [deepBlue, midBlue, primaryBlue],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
