@@ -68,10 +68,15 @@ struct SupabaseAuthService {
     }
 
     private func makeRequest(path: String, method: String, accessToken: String?, body: [String: String]? = nil) throws -> URLRequest {
-        let url = SupabaseConfig.url.appending(path: path)
+        guard let url = URL(string: path, relativeTo: SupabaseConfig.url) else {
+            throw SupabaseAuthError.requestFailed("Falha ao montar a URL de autenticacao do Supabase.")
+        }
+
         var request = URLRequest(url: url)
         request.httpMethod = method
+        request.timeoutInterval = 30
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue(SupabaseConfig.publishableKey, forHTTPHeaderField: "apikey")
 
         if let accessToken {
@@ -95,7 +100,12 @@ struct SupabaseAuthService {
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
+            if httpResponse.statusCode == 404 {
+                throw SupabaseAuthError.requestFailed("Endpoint de autenticacao nao encontrado. Revise a URL do projeto Supabase e se o Auth esta habilitado.")
+            }
+
             let message = (try? decoder.decode(AuthErrorResponse.self, from: data).readableMessage)
+                ?? String(data: data, encoding: .utf8)
                 ?? HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
             throw SupabaseAuthError.requestFailed(message)
         }

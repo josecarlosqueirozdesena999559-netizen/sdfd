@@ -96,12 +96,24 @@ struct AuthErrorResponse: Decodable {
         let rawMessage = errorDescription ?? msg ?? message ?? error ?? "Nao foi possivel concluir a autenticacao."
         let normalized = rawMessage.lowercased()
 
-        if normalized.contains("invalid login credentials") || normalized == "not found" {
+        if normalized.contains("invalid login credentials") {
             return "E-mail ou senha invalidos."
         }
 
         if normalized.contains("email not confirmed") {
             return "Confirme seu e-mail antes de entrar."
+        }
+
+        if normalized == "not found" {
+            return "Login nao encontrado. Verifique se este usuario existe no Supabase Auth e se o projeto configurado esta correto."
+        }
+
+        if normalized.contains("user not found") {
+            return "Usuario nao encontrado no Supabase Auth."
+        }
+
+        if normalized.contains("invalid api key") || normalized.contains("apikey") {
+            return "Falha de configuracao com a chave do Supabase."
         }
 
         return rawMessage
