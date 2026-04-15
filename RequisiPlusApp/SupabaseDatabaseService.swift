@@ -859,7 +859,7 @@ private struct RequisicaoRecord: Decodable {
     let codigo: JSONValue?
     let numeroRequisicao: JSONValue?
     let numeroSolicitacao: JSONValue?
-    let items: String?
+    let items: JSONValue?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -894,15 +894,7 @@ private struct RequisicaoRecord: Decodable {
     }
 
     var legacyItems: [RequisitionItem] {
-        guard let items, items.isEmpty == false, let data = items.data(using: .utf8) else {
-            return []
-        }
-
-        let decoder = JSONDecoder()
-        let records = (try? decoder.decode([LegacyRequisitionItemRecord].self, from: data)) ?? []
-        return records.enumerated().map { index, record in
-            record.toDomain(index: index)
-        }
+        items?.legacyRequisitionItems ?? []
     }
 
     private func resolvedCode(fallbackPosition: Int) -> String {
@@ -1145,12 +1137,12 @@ private struct RequisitionItemInsertResult: Decodable {
 private struct RequisitionItemRecord: Decodable {
     let id: String
     let requisicaoId: String
-    let ordem: Int?
+    let ordem: JSONValue?
     let nome: String?
     let unidade: String?
-    let qtdDisponivel: Double?
-    let qtdNecessaria: Double?
-    let qtdFornecida: Double?
+    let qtdDisponivel: JSONValue?
+    let qtdNecessaria: JSONValue?
+    let qtdFornecida: JSONValue?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -1168,10 +1160,10 @@ private struct RequisitionItemRecord: Decodable {
             id: id,
             name: nome?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "Item sem descrição",
             unit: unidade?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "-",
-            currentBalance: qtdDisponivel,
-            requestedQuantity: qtdNecessaria,
-            providedQuantity: qtdFornecida,
-            sortOrder: ordem ?? 0
+            currentBalance: qtdDisponivel?.doubleValue,
+            requestedQuantity: qtdNecessaria?.doubleValue,
+            providedQuantity: qtdFornecida?.doubleValue,
+            sortOrder: ordem?.intValue ?? 0
         )
     }
 }
@@ -1199,5 +1191,70 @@ private struct LegacyRequisitionItemRecord: Decodable {
 private extension String {
     var nilIfEmpty: String? {
         isEmpty ? nil : self
+    }
+}
+
+private extension JSONValue {
+    var intValue: Int? {
+        switch self {
+        case .number(let value):
+            return Int(value)
+        case .string(let value):
+            return Int(value.trimmingCharacters(in: .whitespacesAndNewlines))
+        default:
+            return nil
+        }
+    }
+
+    var doubleValue: Double? {
+        switch self {
+        case .number(let value):
+            return value
+        case .string(let value):
+            let normalized = value
+                .replacingOccurrences(of: ".", with: "")
+                .replacingOccurrences(of: ",", with: ".")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return Double(normalized)
+        default:
+            return nil
+        }
+    }
+
+    var legacyRequisitionItems: [RequisitionItem] {
+        switch self {
+        case .array(let values):
+            return values.enumerated().compactMap { index, value in
+                value.legacyRequisitionItem(index: index)
+            }
+        case .string(let rawValue):
+            guard let data = rawValue.data(using: .utf8) else {
+                return []
+            }
+
+            let decoder = JSONDecoder()
+            let records = (try? decoder.decode([LegacyRequisitionItemRecord].self, from: data)) ?? []
+            return records.enumerated().map { index, record in
+                record.toDomain(index: index)
+            }
+        default:
+            return []
+        }
+    }
+
+    private func legacyRequisitionItem(index: Int) -> RequisitionItem? {
+        guard case .object(let fields) = self else {
+            return nil
+        }
+
+        return RequisitionItem(
+            id: fields["item_id"]?.stringValue ?? "legacy-item-\(index)",
+            name: fields["item"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "Item sem descrição",
+            unit: fields["unit"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "-",
+            currentBalance: fields["stock"]?.doubleValue,
+            requestedQuantity: fields["need"]?.doubleValue,
+            providedQuantity: fields["provided"]?.doubleValue,
+            sortOrder: fields["ordem"]?.intValue ?? index
+        )
     }
 }
