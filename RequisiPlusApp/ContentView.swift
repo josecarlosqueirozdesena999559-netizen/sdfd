@@ -44,6 +44,7 @@ struct ContentView: View {
 
 private struct DashboardView: View {
     @EnvironmentObject private var pushNotificationManager: PushNotificationManager
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var appDataViewModel: AppDataViewModel
     @State private var selectedSection: AppSection = .inicio
     @State private var lastNonChatSection: AppSection = .inicio
@@ -166,6 +167,16 @@ private struct DashboardView: View {
 
             Task {
                 await appDataViewModel.markVisibleNotificationsAsRead()
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else {
+                return
+            }
+
+            Task {
+                await appDataViewModel.refreshAfterAppBecomesActive()
+                await pushNotificationManager.synchronizeVisibleNotifications(appDataViewModel.inboxNotifications)
             }
         }
         .environmentObject(appDataViewModel)

@@ -358,8 +358,20 @@ final class AppDataViewModel: ObservableObject {
             )
             lastRegisteredPushToken = registrationKey
         } catch {
-            errorMessage = error.localizedDescription
+            let normalizedMessage = error.localizedDescription.normalizedSearchText
+            if normalizedMessage.contains("duplicate key") || normalizedMessage.contains("device_token_key") {
+                return
+            }
         }
+    }
+
+    func refreshAfterAppBecomesActive() async {
+        if profile == nil {
+            await load()
+            return
+        }
+
+        await performLoad(showLoading: false)
     }
 
     private static func makeSummary(from requisitions: [Requisition]) -> DashboardSummary {

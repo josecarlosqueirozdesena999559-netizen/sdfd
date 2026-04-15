@@ -107,18 +107,26 @@ final class PushNotificationManager: NSObject, ObservableObject {
                 .map(\.id)
         )
 
-        guard hasRemoteBaseline else {
+        if hasRemoteBaseline == false {
             knownRemoteNotificationIds = unreadRemoteIds
             hasRemoteBaseline = true
-            return
+        } else {
+            let newRemoteIds = unreadRemoteIds.subtracting(knownRemoteNotificationIds)
+            for notification in notifications where newRemoteIds.contains(notification.id) {
+                await scheduleLocalNotification(for: notification)
+            }
+
+            knownRemoteNotificationIds = unreadRemoteIds
         }
 
-        let newRemoteIds = unreadRemoteIds.subtracting(knownRemoteNotificationIds)
-        for notification in notifications where newRemoteIds.contains(notification.id) {
-            await scheduleLocalNotification(for: notification)
-        }
+        let activeIdentifiers = Set(
+            notifications
+                .filter { $0.isRead == false }
+                .map { localNotificationIdentifier(for: $0.id) }
+        )
 
-        knownRemoteNotificationIds = unreadRemoteIds
+        await synchronizeDeliveredNotifications(activeIdentifiers: activeIdentifiers)
+        UIApplication.shared.applicationIconBadgeNumber = activeIdentifiers.count
     }
 
     private func persistDeliveredDashboardNotificationIds() {
@@ -153,6 +161,31 @@ final class PushNotificationManager: NSObject, ObservableObject {
             try await notificationCenter.add(request)
         } catch {
             lastErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func localNotificationIdentifier(for notificationId: String) -> String {
+        "requisiPlus.local.\(notificationId)"
+    }
+
+    private func synchronizeDeliveredNotifications(activeIdentifiers: Set<String>) async {
+        let delivered = await notificationCenter.deliveredNotifications()
+        let deliveredIdentifiers = delivered
+            .map(\.request.identifier)
+            .filter { $0.hasPrefix("requisiPlus.local.") }
+
+        let staleDeliveredIdentifiers = deliveredIdentifiers.filter { activeIdentifiers.contains($0) == false }
+        if staleDeliveredIdentifiers.isEmpty == false {
+            notificationCenter.removeDeliveredNotifications(withIdentifiers: staleDeliveredIdentifiers)
+        }
+
+        let pendingRequests = await notificationCenter.pendingNotificationRequests()
+        let stalePendingIdentifiers = pendingRequests
+            .map(\.identifier)
+            .filter { $0.hasPrefix("requisiPlus.local.") && activeIdentifiers.contains($0) == false }
+
+        if stalePendingIdentifiers.isEmpty == false {
+            notificationCenter.removePendingNotificationRequests(withIdentifiers: stalePendingIdentifiers)
         }
     }
 }

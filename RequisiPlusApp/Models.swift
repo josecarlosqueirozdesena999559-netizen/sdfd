@@ -10,6 +10,7 @@ struct DashboardAlert: Identifiable {
 struct Requisition: Identifiable {
     let id: String
     let code: String
+    let hasRealCode: Bool
     let materialType: String
     let sector: String
     let requestedBy: String
@@ -175,6 +176,10 @@ extension Requisition {
 
     var statusDisplay: String {
         status.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    var canOpenDetails: Bool {
+        hasRealCode && items.isEmpty == false
     }
 }
 

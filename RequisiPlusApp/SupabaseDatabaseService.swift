@@ -272,9 +272,6 @@ struct SupabaseDatabaseService {
         bundleIdentifier: String,
         environment: String
     ) async throws {
-        let encodedToken = deviceToken.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? deviceToken
-        let existingPath = "/rest/v1/user_push_tokens?select=id&device_token=eq.\(encodedToken)&limit=1"
-
         let payload = PushTokenPayload(
             userId: profile.id,
             deviceToken: deviceToken,
@@ -285,24 +282,33 @@ struct SupabaseDatabaseService {
             lastRegisteredAt: AppDateFormatter.iso8601Basic.string(from: Date())
         )
 
-        if let existing: PushTokenRecord = try await fetchFirstOptional(path: existingPath, accessToken: userSession.accessToken) {
-            let _: [PushTokenRecord] = try await performOptional(
-                path: "/rest/v1/user_push_tokens?id=eq.\(existing.id)&select=id",
-                method: "PATCH",
-                accessToken: userSession.accessToken,
-                body: payload,
-                preferRepresentation: true
-            )
-            return
+        guard let url = URL(
+            string: "/rest/v1/user_push_tokens?on_conflict=device_token&select=id",
+            relativeTo: SupabaseConfig.url
+        ) else {
+            throw SupabaseDatabaseError.invalidURL
         }
 
-        let _: [PushTokenRecord] = try await performOptional(
-            path: "/rest/v1/user_push_tokens?select=id",
-            method: "POST",
-            accessToken: userSession.accessToken,
-            body: payload,
-            preferRepresentation: true
-        )
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(SupabaseConfig.publishableKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(userSession.accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("resolution=merge-duplicates,return=representation", forHTTPHeaderField: "Prefer")
+        request.httpBody = try encoder.encode(payload)
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw SupabaseDatabaseError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let message = (try? decoder.decode(AuthErrorResponse.self, from: data).readableMessage)
+                ?? HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
+            throw SupabaseDatabaseError.requestFailed(message)
+        }
     }
 
     func createRequisition(
@@ -312,7 +318,7 @@ struct SupabaseDatabaseService {
         entries: [RequestedItemEntry],
         observation: String
     ) async throws -> Requisition {
-        let systemCode = try await nextSystemRequisitionCode(session: userSession)
+        let systemCode = try await getNextSaidaCodigoForRequisition(session: userSession)
         let itemPayload = entries.enumerated().map { index, entry in
             RequisitionItemPayload(
                 item: entry.item.name,
@@ -333,6 +339,7 @@ struct SupabaseDatabaseService {
             data: DateFormatter.requisitionDate.string(from: Date()),
             items: Self.encodeJSONString(itemPayload),
             status: "aguardando_assinatura_requisicao",
+            saidaCodigo: systemCode,
             codigo: systemCode,
             numeroRequisicao: systemCode,
             numeroSolicitacao: systemCode,
@@ -405,21 +412,19 @@ struct SupabaseDatabaseService {
         return json
     }
 
-    private func nextSystemRequisitionCode(session userSession: UserSession) async throws -> String {
-        let path = "/rest/v1/requisicoes?select=saida_codigo,numero,codigo,numero_requisicao,numero_solicitacao,created_at&order=created_at.desc&limit=50"
-        let records: [RequisicaoRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
-        let todayPrefix = DateFormatter.systemRequisitionPrefix.string(from: Date())
+    private func getNextSaidaCodigoForRequisition(session userSession: UserSession) async throws -> String {
+        let prefix = DateFormatter.requisitionCodePrefix.string(from: Date())
+        let encodedPrefix = "\(prefix)*".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "\(prefix)*"
+        let path = "/rest/v1/requisicoes?select=saida_codigo&saida_codigo=like.\(encodedPrefix)&order=saida_codigo.desc&limit=1"
+        let records: [RequisicaoCodigoRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
 
-        let latestCode = records
-            .compactMap(\.systemCode)
-            .first
-
-        guard let latestCode, latestCode.hasPrefix(todayPrefix), latestCode.count >= 9 else {
-            return "\(todayPrefix)001"
+        guard let latestCode = records.compactMap(\.saidaCodigo).first else {
+            return "\(prefix)001"
         }
 
-        let nextSequence = (Int(latestCode.suffix(3)) ?? 0) + 1
-        return "\(todayPrefix)\(String(format: "%03d", nextSequence))"
+        let sequenceText = String(latestCode.dropFirst(prefix.count))
+        let nextSequence = (Int(sequenceText) ?? 0) + 1
+        return "\(prefix)\(String(format: "%03d", nextSequence))"
     }
 
     private func fetchRequisitionItems(
@@ -928,9 +933,12 @@ private struct RequisicaoRecord: Decodable {
     }
 
     func toDomain(position: Int, items: [RequisitionItem]) -> Requisition {
+        let realCode = systemCode
+
         Requisition(
             id: id,
-            code: resolvedCode(fallbackPosition: position),
+            code: realCode ?? resolvedCode(fallbackPosition: position),
+            hasRealCode: realCode != nil,
             materialType: categoria,
             sector: setor,
             requestedBy: solicitante,
@@ -968,6 +976,14 @@ private struct RequisicaoRecord: Decodable {
     }
 }
 
+private struct RequisicaoCodigoRecord: Decodable {
+    let saidaCodigo: String?
+
+    enum CodingKeys: String, CodingKey {
+        case saidaCodigo = "saida_codigo"
+    }
+}
+
 private struct NewRequisitionPayload: Encodable {
     let setor: String
     let solicitante: String
@@ -975,6 +991,7 @@ private struct NewRequisitionPayload: Encodable {
     let data: String
     let items: String
     let status: String
+    let saidaCodigo: String?
     let codigo: String?
     let numeroRequisicao: String?
     let numeroSolicitacao: String?
@@ -989,6 +1006,7 @@ private struct NewRequisitionPayload: Encodable {
         case data
         case items
         case status
+        case saidaCodigo = "saida_codigo"
         case codigo
         case numeroRequisicao = "numero_requisicao"
         case numeroSolicitacao = "numero_solicitacao"
@@ -1012,7 +1030,7 @@ private extension DateFormatter {
         return formatter
     }()
 
-    static let systemRequisitionPrefix: DateFormatter = {
+    static let requisitionCodePrefix: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "pt_BR")
         formatter.dateFormat = "ddMMyy"
