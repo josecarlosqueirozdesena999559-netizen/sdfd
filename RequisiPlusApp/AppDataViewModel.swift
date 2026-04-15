@@ -47,7 +47,15 @@ final class AppDataViewModel: ObservableObject {
     }
 
     var dashboardAlert: DashboardAlert {
-        DashboardAlert(
+        if summary.desktopSignatureCount > 0 {
+            return DashboardAlert(
+                title: "Você tem requisições pendentes para assinatura.",
+                message: "Abra a aba de requisições para localizar os itens que ainda dependem da sua assinatura.",
+                actionTitle: "Ver requisições"
+            )
+        }
+
+        return DashboardAlert(
             title: summary.pendingCount > 0
                 ? "Você tem requisições pendentes."
                 : "Sem pendências no momento.",
@@ -63,7 +71,21 @@ final class AppDataViewModel: ObservableObject {
     }
 
     var unreadNotificationCount: Int {
-        notifications.filter { $0.isRead == false }.count
+        inboxNotifications.filter { $0.isRead == false }.count
+    }
+
+    var inboxNotifications: [NotificationItem] {
+        let remoteNotifications = notifications.sorted {
+            ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast)
+        }
+
+        return dashboardNotifications + remoteNotifications
+    }
+
+    var notificationSyncKey: String {
+        inboxNotifications
+            .map { "\($0.id):\($0.isRead ? "1" : "0")" }
+            .joined(separator: "|")
     }
 
     var canCurrentUserSwitchChatThreads: Bool {
@@ -236,6 +258,10 @@ final class AppDataViewModel: ObservableObject {
     }
 
     func markNotificationAsRead(_ notification: NotificationItem) async {
+        guard notification.isSystemNotification == false else {
+            return
+        }
+
         do {
             try await databaseService.markNotificationAsRead(session: userSession, notificationId: notification.id)
             await refreshSupplementaryData()
@@ -403,6 +429,40 @@ final class AppDataViewModel: ObservableObject {
         if let contacts = try? await contactsTask {
             self.adminContacts = contacts
         }
+    }
+
+    private var dashboardNotifications: [NotificationItem] {
+        if summary.desktopSignatureCount > 0 {
+            return [
+                NotificationItem(
+                    id: "dashboard-signature-pending",
+                    title: "Assinaturas pendentes",
+                    body: "Você tem requisições pendentes para assinatura.",
+                    createdAt: nil,
+                    isRead: false,
+                    targetThreadId: nil,
+                    targetSection: AppSection.verRequisicoes.rawValue,
+                    isSystemNotification: true
+                )
+            ]
+        }
+
+        if summary.pendingCount > 0 {
+            return [
+                NotificationItem(
+                    id: "dashboard-requisition-pending",
+                    title: "Requisições pendentes",
+                    body: "Você tem requisições pendentes para acompanhar no app.",
+                    createdAt: nil,
+                    isRead: false,
+                    targetThreadId: nil,
+                    targetSection: AppSection.verRequisicoes.rawValue,
+                    isSystemNotification: true
+                )
+            ]
+        }
+
+        return []
     }
 
     private static func realtimeSubscriptions(for authUserId: String) -> [SupabaseRealtimeService.Subscription] {

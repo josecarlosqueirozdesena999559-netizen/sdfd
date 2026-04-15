@@ -119,23 +119,40 @@ private struct DashboardView: View {
                 }
             }
         }
+        .onChange(of: pushNotificationManager.pendingSectionRawValue) { _, sectionRawValue in
+            guard let sectionRawValue,
+                  let section = AppSection(rawValue: sectionRawValue),
+                  availableSections.contains(section) else {
+                return
+            }
+
+            selectedSection = section
+            pushNotificationManager.pendingSectionRawValue = nil
+        }
+        .task(id: appDataViewModel.notificationSyncKey) {
+            await pushNotificationManager.synchronizeVisibleNotifications(appDataViewModel.inboxNotifications)
+        }
         .sheet(isPresented: $showingNotifications) {
             NotificationsSheet(
-                notifications: appDataViewModel.notifications,
-                onOpenThread: { threadId in
+                notifications: appDataViewModel.inboxNotifications,
+                onOpenNotification: { notification in
                     showingNotifications = false
 
-                    guard availableSections.contains(.chat) else {
+                    if notification.isSystemNotification == false {
+                        await appDataViewModel.markNotificationAsRead(notification)
+                    }
+
+                    if let threadId = notification.targetThreadId, availableSections.contains(.chat) {
+                        selectedSection = .chat
+                        try? await appDataViewModel.loadMessages(for: threadId)
                         return
                     }
 
-                    selectedSection = .chat
-                    if let threadId {
-                        try? await appDataViewModel.loadMessages(for: threadId)
+                    if let targetSection = notification.targetSection,
+                       let section = AppSection(rawValue: targetSection),
+                       availableSections.contains(section) {
+                        selectedSection = section
                     }
-                },
-                onMarkAsRead: { notification in
-                    await appDataViewModel.markNotificationAsRead(notification)
                 }
             )
             .presentationDetents([.medium, .large])
@@ -307,8 +324,7 @@ extension AppSection {
 
 private struct NotificationsSheet: View {
     let notifications: [NotificationItem]
-    let onOpenThread: (String?) async -> Void
-    let onMarkAsRead: (NotificationItem) async -> Void
+    let onOpenNotification: (NotificationItem) async -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -326,8 +342,7 @@ private struct NotificationsSheet: View {
                         ForEach(notifications) { notification in
                             Button {
                                 Task {
-                                    await onMarkAsRead(notification)
-                                    await onOpenThread(notification.targetThreadId)
+                                    await onOpenNotification(notification)
                                 }
                             } label: {
                                 SoftPanel(padding: 16) {

@@ -665,7 +665,9 @@ private struct NotificationRecord: Decodable {
             body: body,
             createdAt: AppDateFormatter.parse(dateString: createdAt),
             isRead: isRead ?? false,
-            targetThreadId: targetThreadId
+            targetThreadId: targetThreadId,
+            targetSection: targetThreadId == nil ? AppSection.verRequisicoes.rawValue : AppSection.chat.rawValue,
+            isSystemNotification: false
         )
     }
 }
@@ -855,7 +857,7 @@ private struct RequisicaoRecord: Decodable {
             numeroSolicitacao?.displayText
         ]
         .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
-        .first { $0.isEmpty == false }
+        .first { $0.isEmpty == false && $0.isUUIDLike == false }
 
         if let realCode {
             return realCode
@@ -886,6 +888,12 @@ private struct NewRequisitionPayload: Encodable {
         case solicitanteCpf = "solicitante_cpf"
         case solicitanteFuncao = "solicitante_funcao"
         case devolucaoMotivo = "devolucao_motivo"
+    }
+}
+
+private extension String {
+    var isUUIDLike: Bool {
+        UUID(uuidString: trimmingCharacters(in: .whitespacesAndNewlines)) != nil
     }
 }
 

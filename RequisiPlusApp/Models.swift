@@ -88,6 +88,8 @@ struct NotificationItem: Identifiable, Hashable {
     let createdAt: Date?
     let isRead: Bool
     let targetThreadId: String?
+    let targetSection: String?
+    let isSystemNotification: Bool
 }
 
 struct ChatContact: Identifiable, Hashable {
