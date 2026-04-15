@@ -897,7 +897,7 @@ private struct RequisicaoRecord: Decodable {
         items?.legacyRequisitionItems ?? []
     }
 
-    private func resolvedCode(fallbackPosition: Int) -> String {
+    private func resolvedCode(fallbackPosition _: Int) -> String {
         let realCode = [
             saidaCodigo,
             numero?.displayText,
@@ -912,7 +912,7 @@ private struct RequisicaoRecord: Decodable {
             return realCode
         }
 
-        return "REQ-\(String(format: "%04d", (timestamp ?? Int64(fallbackPosition + 1)) % 10000))"
+        return "Aguardando código do sistema"
     }
 }
 
