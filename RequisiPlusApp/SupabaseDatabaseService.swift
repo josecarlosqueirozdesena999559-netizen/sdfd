@@ -280,7 +280,6 @@ struct SupabaseDatabaseService {
         entries: [RequestedItemEntry],
         observation: String
     ) async throws -> Requisition {
-        let generatedCode = makeRequisitionCode()
         let itemPayload = entries.enumerated().map { index, entry in
             RequisitionItemPayload(
                 item: entry.item.name,
@@ -301,8 +300,6 @@ struct SupabaseDatabaseService {
             data: DateFormatter.requisitionDate.string(from: Date()),
             items: Self.encodeJSONString(itemPayload),
             status: "aguardando_assinatura_requisicao",
-            numeroRequisicao: generatedCode,
-            numeroSolicitacao: generatedCode,
             solicitanteCpf: profile.cpf,
             solicitanteFuncao: profile.funcao,
             devolucaoMotivo: buildObservation(
@@ -875,8 +872,6 @@ private struct NewRequisitionPayload: Encodable {
     let data: String
     let items: String
     let status: String
-    let numeroRequisicao: String
-    let numeroSolicitacao: String
     let solicitanteCpf: String?
     let solicitanteFuncao: String?
     let devolucaoMotivo: String?
@@ -888,8 +883,6 @@ private struct NewRequisitionPayload: Encodable {
         case data
         case items
         case status
-        case numeroRequisicao = "numero_requisicao"
-        case numeroSolicitacao = "numero_solicitacao"
         case solicitanteCpf = "solicitante_cpf"
         case solicitanteFuncao = "solicitante_funcao"
         case devolucaoMotivo = "devolucao_motivo"
