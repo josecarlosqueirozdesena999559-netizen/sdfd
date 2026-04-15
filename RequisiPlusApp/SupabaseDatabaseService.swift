@@ -238,6 +238,26 @@ struct SupabaseDatabaseService {
         )
     }
 
+    func markNotificationsAsRead(session userSession: UserSession, notificationIds: [String]) async throws {
+        guard notificationIds.isEmpty == false else {
+            return
+        }
+
+        let encodedIds = notificationIds
+            .map { "\"\($0)\"" }
+            .map { $0.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0 }
+            .joined(separator: ",")
+
+        let payload = ReadNotificationPayload(isRead: true)
+        let _: [NotificationRecord] = try await performOptional(
+            path: "/rest/v1/user_notifications?id=in.(\(encodedIds))&select=id",
+            method: "PATCH",
+            accessToken: userSession.accessToken,
+            body: payload,
+            preferRepresentation: true
+        )
+    }
+
     func registerPushToken(
         session userSession: UserSession,
         profile: UserProfile,
@@ -285,6 +305,7 @@ struct SupabaseDatabaseService {
         entries: [RequestedItemEntry],
         observation: String
     ) async throws -> Requisition {
+        let systemCode = try await nextSystemRequisitionCode(session: userSession)
         let itemPayload = entries.enumerated().map { index, entry in
             RequisitionItemPayload(
                 item: entry.item.name,
@@ -305,6 +326,9 @@ struct SupabaseDatabaseService {
             data: DateFormatter.requisitionDate.string(from: Date()),
             items: Self.encodeJSONString(itemPayload),
             status: "aguardando_assinatura_requisicao",
+            codigo: systemCode,
+            numeroRequisicao: systemCode,
+            numeroSolicitacao: systemCode,
             solicitanteCpf: profile.cpf,
             solicitanteFuncao: profile.funcao,
             devolucaoMotivo: buildObservation(
@@ -372,6 +396,23 @@ struct SupabaseDatabaseService {
             return "[]"
         }
         return json
+    }
+
+    private func nextSystemRequisitionCode(session userSession: UserSession) async throws -> String {
+        let path = "/rest/v1/requisicoes?select=saida_codigo,numero,codigo,numero_requisicao,numero_solicitacao,created_at&order=created_at.desc&limit=50"
+        let records: [RequisicaoRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
+        let todayPrefix = DateFormatter.systemRequisitionPrefix.string(from: Date())
+
+        let latestCode = records
+            .compactMap(\.systemCode)
+            .first
+
+        guard let latestCode, latestCode.hasPrefix(todayPrefix), latestCode.count >= 9 else {
+            return "\(todayPrefix)001"
+        }
+
+        let nextSequence = (Int(latestCode.suffix(3)) ?? 0) + 1
+        return "\(todayPrefix)\(String(format: "%03d", nextSequence))"
     }
 
     private func fetchRequisitionItems(
@@ -898,21 +939,25 @@ private struct RequisicaoRecord: Decodable {
     }
 
     private func resolvedCode(fallbackPosition _: Int) -> String {
-        let realCode = [
-            saidaCodigo,
-            numero?.displayText,
-            codigo?.displayText,
-            numeroRequisicao?.displayText,
-            numeroSolicitacao?.displayText
-        ]
-        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
-        .first { $0.isEmpty == false && $0.isUUIDLike == false }
+        let realCode = systemCode
 
         if let realCode {
             return realCode
         }
 
         return "Aguardando código do sistema"
+    }
+
+    var systemCode: String? {
+        [
+            saidaCodigo,
+            numeroRequisicao?.displayText,
+            numeroSolicitacao?.displayText,
+            codigo?.displayText,
+            numero?.displayText
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .first { $0.isEmpty == false && $0.isUUIDLike == false }
     }
 }
 
@@ -923,6 +968,9 @@ private struct NewRequisitionPayload: Encodable {
     let data: String
     let items: String
     let status: String
+    let codigo: String?
+    let numeroRequisicao: String?
+    let numeroSolicitacao: String?
     let solicitanteCpf: String?
     let solicitanteFuncao: String?
     let devolucaoMotivo: String?
@@ -934,6 +982,9 @@ private struct NewRequisitionPayload: Encodable {
         case data
         case items
         case status
+        case codigo
+        case numeroRequisicao = "numero_requisicao"
+        case numeroSolicitacao = "numero_solicitacao"
         case solicitanteCpf = "solicitante_cpf"
         case solicitanteFuncao = "solicitante_funcao"
         case devolucaoMotivo = "devolucao_motivo"
@@ -951,6 +1002,13 @@ private extension DateFormatter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "pt_BR")
         formatter.dateFormat = "dd/MM/yyyy"
+        return formatter
+    }()
+
+    static let systemRequisitionPrefix: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "ddMMyy"
         return formatter
     }()
 }

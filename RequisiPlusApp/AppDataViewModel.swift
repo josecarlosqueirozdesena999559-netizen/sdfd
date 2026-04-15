@@ -270,6 +270,23 @@ final class AppDataViewModel: ObservableObject {
         }
     }
 
+    func markVisibleNotificationsAsRead() async {
+        let unreadNotifications = notifications.filter { $0.isRead == false }
+        guard unreadNotifications.isEmpty == false else {
+            return
+        }
+
+        do {
+            try await databaseService.markNotificationsAsRead(
+                session: userSession,
+                notificationIds: unreadNotifications.map(\.id)
+            )
+            await refreshSupplementaryData()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func updateTypingState(for thread: ChatThread?, text: String, isRecording: Bool) {
         guard let profile, let thread else {
             stopTyping()

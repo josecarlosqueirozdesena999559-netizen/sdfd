@@ -157,6 +157,15 @@ private struct DashboardView: View {
             )
             .presentationDetents([.medium, .large])
         }
+        .onChange(of: showingNotifications) { _, isShowing in
+            guard isShowing else {
+                return
+            }
+
+            Task {
+                await appDataViewModel.markVisibleNotificationsAsRead()
+            }
+        }
         .environmentObject(appDataViewModel)
     }
 
@@ -378,8 +387,15 @@ private struct NotificationsSheet: View {
                 .padding(16)
             }
             .background(AppTheme.background.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Notificações")
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Notificações")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Fechar") {
                         dismiss()
