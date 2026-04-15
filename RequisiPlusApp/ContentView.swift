@@ -87,9 +87,11 @@ private struct DashboardView: View {
             await pushNotificationManager.requestAuthorizationIfNeeded()
             await syncPushTokenIfAvailable()
             syncSelectedSectionWithProfile()
+            ensureHomeAsDefault()
         }
         .onChange(of: appDataViewModel.profile?.isAdmin) { _, _ in
             syncSelectedSectionWithProfile()
+            ensureHomeAsDefault()
         }
         .onChange(of: selectedSection) { _, newValue in
             if newValue != .chat {
@@ -205,6 +207,15 @@ private struct DashboardView: View {
         }
 
         selectedSection = firstSection
+    }
+
+    private func ensureHomeAsDefault() {
+        guard appDataViewModel.profile?.isAdmin != true else {
+            return
+        }
+
+        selectedSection = .inicio
+        lastNonChatSection = .inicio
     }
 
     private func syncPushTokenIfAvailable() async {

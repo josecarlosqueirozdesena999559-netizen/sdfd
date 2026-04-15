@@ -29,7 +29,6 @@ struct HomeView: View {
                 }
             } else {
                 heroCard
-                summaryRow
                 recentRequestsCard
             }
         }
@@ -46,67 +45,33 @@ struct HomeView: View {
                 .offset(x: 28, y: -32)
 
             VStack(alignment: .leading, spacing: 18) {
-                Text("Início")
+                Text("Comunicados")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.82))
 
-                Text(homeHeadline)
-                    .font(.system(size: 28, weight: .bold))
+                Text(appDataViewModel.dashboardAlert.title)
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(.white)
 
-                HStack(spacing: 12) {
-                    Button {
-                        selectedSection = appDataViewModel.summary.pendingCount > 0 ? .verRequisicoes : .fazerRequisicao
-                    } label: {
-                        Text(appDataViewModel.summary.pendingCount > 0 ? "Ver requisições" : "Fazer requisição")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(AppTheme.deepBlue)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 12)
-                            .background(Color.white, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
+                Text(appDataViewModel.dashboardAlert.message)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.88))
 
-                    Text("\(appDataViewModel.requisitions.count) registro(s) carregados")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.white.opacity(0.8))
+                Button {
+                    selectedSection = appDataViewModel.summary.pendingCount > 0 ? .verRequisicoes : .fazerRequisicao
+                } label: {
+                    Text(appDataViewModel.dashboardAlert.actionTitle)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(AppTheme.deepBlue)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .background(Color.white, in: Capsule())
                 }
+                .buttonStyle(.plain)
             }
             .padding(24)
         }
         .shadow(color: AppTheme.deepBlue.opacity(0.16), radius: 18, x: 0, y: 10)
-    }
-
-    private var summaryRow: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                CompactMetricCard(
-                    title: "Pendentes",
-                    value: "\(appDataViewModel.summary.pendingCount)",
-                    systemImage: "tray.full"
-                )
-
-                CompactMetricCard(
-                    title: "Concluídas",
-                    value: "\(completedCount)",
-                    systemImage: "checkmark.circle"
-                )
-            }
-
-            HStack(spacing: 12) {
-                InfoStrip(
-                    icon: "person.crop.circle",
-                    title: "Solicitante",
-                    value: appDataViewModel.profile?.name ?? "Usuário"
-                )
-
-                InfoStrip(
-                    icon: "building.2",
-                    title: "Setor",
-                    value: appDataViewModel.profile?.setor ?? "Não informado"
-                )
-            }
-        }
     }
 
     private var recentRequestsCard: some View {
@@ -161,27 +126,8 @@ struct HomeView: View {
         )
     }
 
-    private var completedCount: Int {
-        appDataViewModel.requisitions.filter {
-            let status = $0.normalizedStatus
-            return status.contains("conclu") || status.contains("finaliz") || status.contains("entreg")
-        }.count
-    }
-
     private var recentRequisitions: [Requisition] {
         Array(appDataViewModel.requisitions.prefix(3))
-    }
-
-    private var homeHeadline: String {
-        if appDataViewModel.summary.desktopSignatureCount > 0 {
-            return "Você tem assinaturas pendentes"
-        }
-
-        if appDataViewModel.summary.pendingCount == 0 {
-            return "Você não tem pendências"
-        }
-
-        return "Requisições pendentes"
     }
 
     private func statusTint(for requisition: Requisition) -> Color {

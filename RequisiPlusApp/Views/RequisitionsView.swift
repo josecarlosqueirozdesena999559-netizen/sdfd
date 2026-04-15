@@ -3,67 +3,19 @@ import SwiftUI
 struct RequisitionsView: View {
     @EnvironmentObject private var appDataViewModel: AppDataViewModel
     private let fixedFilter: RequestFilter?
-    @State private var searchText = ""
-    @State private var selectedFilter: RequestFilter = .all
     @State private var selectedRequisition: Requisition?
 
     init(fixedFilter: RequestFilter? = nil) {
         self.fixedFilter = fixedFilter
-        _selectedFilter = State(initialValue: fixedFilter ?? .all)
     }
 
     var body: some View {
         ScreenContainer(title: "", subtitle: "") {
-            summaryCard
-            searchCard
             listCard
         }
         .sheet(item: $selectedRequisition) { requisition in
             RequisitionDetailsSheet(requisition: requisition)
                 .presentationDetents([.large])
-        }
-    }
-
-    private var summaryCard: some View {
-        HStack(spacing: 12) {
-            SmallSummaryCard(
-                title: "Total",
-                value: "\(appDataViewModel.requisitions.count)",
-                icon: "doc.text"
-            )
-
-            SmallSummaryCard(
-                title: "Pendentes",
-                value: "\(pendingCount)",
-                icon: "clock"
-            )
-
-            SmallSummaryCard(
-                title: "Concluídas",
-                value: "\(completedCount)",
-                icon: "checkmark.circle"
-            )
-        }
-    }
-
-    private var searchCard: some View {
-        PrimaryCard {
-            SectionHeader(title: "Requisições", subtitle: "Pesquise por código, categoria ou status e filtre rapidamente o resultado.")
-
-            SearchFieldRow(
-                prompt: "Buscar por código, categoria ou status",
-                text: $searchText
-            )
-
-            if fixedFilter == nil {
-                HStack(spacing: 10) {
-                    ForEach(RequestFilter.allCases) { filter in
-                        filterChip(filter)
-                    }
-
-                    Spacer()
-                }
-            }
         }
     }
 
@@ -86,28 +38,6 @@ struct RequisitionsView: View {
                 }
             }
         }
-    }
-
-    private func filterChip(_ filter: RequestFilter) -> some View {
-        Button {
-            selectedFilter = filter
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: filter.icon)
-                    .font(.system(size: 12, weight: .bold))
-
-                Text(filter.title)
-                    .font(.system(size: 13, weight: .bold))
-            }
-            .foregroundStyle(selectedFilter == filter ? .white : AppTheme.deepBlue)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(
-                Capsule()
-                    .fill(selectedFilter == filter ? AppTheme.deepBlue : AppTheme.primaryBlue.opacity(0.08))
-            )
-        }
-        .buttonStyle(.plain)
     }
 
     private func requisitionRow(_ requisition: Requisition) -> some View {
@@ -140,10 +70,6 @@ struct RequisitionsView: View {
                     rowMeta(icon: "building.2", text: requisition.sector)
                     rowMeta(icon: "shippingbox", text: requisition.materialType.capitalized)
                 }
-
-                Text("Toque para ver os itens")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(AppTheme.deepBlue)
             }
         }
         .buttonStyle(.plain)
@@ -180,30 +106,11 @@ struct RequisitionsView: View {
     }
 
     private var filteredRequisitions: [Requisition] {
-        appDataViewModel.requisitions.filter { requisition in
-            let matchesFilter = selectedFilter.matches(requisition: requisition)
-            let matchesSearch: Bool
-
-            if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                matchesSearch = true
-            } else {
-                let query = searchText.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-                matchesSearch =
-                    requisition.materialType.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current).contains(query) ||
-                    requisition.code.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current).contains(query) ||
-                    requisition.normalizedStatus.contains(query)
-            }
-
-            return matchesFilter && matchesSearch
+        if let fixedFilter {
+            return appDataViewModel.requisitions.filter { fixedFilter.matches(requisition: $0) }
         }
-    }
 
-    private var pendingCount: Int {
-        appDataViewModel.requisitions.filter { RequestFilter.pending.matches(requisition: $0) }.count
-    }
-
-    private var completedCount: Int {
-        appDataViewModel.requisitions.filter { RequestFilter.done.matches(requisition: $0) }.count
+        return appDataViewModel.requisitions
     }
 }
 
@@ -257,40 +164,6 @@ enum RequestFilter: String, CaseIterable, Identifiable {
             let status = requisition.normalizedStatus
             return status.contains("conclu") || status.contains("finaliz") || status.contains("entreg")
         }
-    }
-}
-
-private struct SmallSummaryCard: View {
-    let title: String
-    let value: String
-    let icon: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(AppTheme.deepBlue)
-                .frame(width: 32, height: 32)
-                .background(AppTheme.skyBlue, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-            Text(value)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(AppTheme.textPrimary)
-
-            Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(AppTheme.textMuted)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(AppTheme.panelBorder.opacity(0.95), lineWidth: 1)
-        )
     }
 }
 

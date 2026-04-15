@@ -9,211 +9,132 @@ struct LoginView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let contentWidth = min(geometry.size.width - 32, 620)
+            let contentWidth = min(geometry.size.width - 32, 520)
 
             ZStack {
                 AppTheme.background
                     .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    header
+                VStack(alignment: .leading, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("requisi+")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(AppTheme.deepBlue)
 
-                    ScrollView(showsIndicators: false) {
-                        formContent
-                            .frame(maxWidth: contentWidth, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.top, 28)
-                            .padding(.bottom, max(24, geometry.safeAreaInsets.bottom + 16))
-                            .frame(maxWidth: .infinity)
+                        Text("Entrar")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+
+                        Text("Acesse a plataforma com suas credenciais para continuar.")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(AppTheme.textMuted)
                     }
+
+                    VStack(spacing: 0) {
+                        loginField(
+                            icon: "envelope",
+                            text: $email,
+                            prompt: "E-mail",
+                            keyboardType: .emailAddress,
+                            field: .email,
+                            isSecure: false
+                        )
+
+                        Divider()
+                            .padding(.leading, 44)
+
+                        loginField(
+                            icon: "lock",
+                            text: $password,
+                            prompt: "Senha",
+                            keyboardType: .default,
+                            field: .password,
+                            isSecure: true
+                        )
+                    }
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(AppTheme.fieldBorder, lineWidth: 1)
+                    )
+
+                    if let errorMessage = authViewModel.errorMessage, !errorMessage.isEmpty {
+                        Text(errorMessage)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.red.opacity(0.9))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Button {
+                        submit()
+                    } label: {
+                        HStack(spacing: 10) {
+                            if authViewModel.isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                            }
+
+                            Text(authViewModel.isLoading ? "Entrando..." : "Entrar")
+                                .font(.system(size: 17, weight: .bold))
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(AppTheme.primaryBlue, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(authViewModel.isLoading || email.isEmpty || password.isEmpty)
+                    .opacity(authViewModel.isLoading || email.isEmpty || password.isEmpty ? 0.65 : 1)
+
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: contentWidth)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.horizontal, 16)
+                .padding(.top, max(48, geometry.safeAreaInsets.top + 28))
+                .padding(.bottom, max(24, geometry.safeAreaInsets.bottom + 16))
             }
-            .ignoresSafeArea()
+            .contentShape(Rectangle())
             .onTapGesture {
                 focusedField = nil
             }
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("requisi+")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Color.white.opacity(0.82))
-
-            Text("Entrar")
-                .font(.system(size: 34, weight: .bold))
-                .foregroundStyle(.white)
-
-            Text("Acesse a plataforma com suas credenciais para fazer login.")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.84))
-                .padding(.top, 8)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 24)
-        .background(
-            AppTheme.heroGradient
-                .ignoresSafeArea(edges: .top)
-        )
-    }
-
-    private var formContent: some View {
-        PrimaryCard(padding: 22) {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Seu acesso")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-
-                    Text("Use seu e-mail e senha para continuar.")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(AppTheme.textMuted)
-                }
-
-                SoftPanel {
-                    VStack(spacing: 16) {
-                        inputField(
-                            title: "E-mail",
-                            icon: "envelope.fill",
-                            text: $email,
-                            prompt: "seu@email.com",
-                            keyboardType: .emailAddress,
-                            field: .email
-                        )
-
-                        secureInputField(
-                            title: "Senha",
-                            icon: "lock.fill",
-                            text: $password,
-                            prompt: "Digite sua senha",
-                            field: .password
-                        )
-                    }
-                }
-
-                if let errorMessage = authViewModel.errorMessage, !errorMessage.isEmpty {
-                    SoftPanel {
-                        Text(errorMessage)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color.red.opacity(0.9))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-
-                Button {
-                    submit()
-                } label: {
-                    HStack(spacing: 10) {
-                        if authViewModel.isLoading {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 16, weight: .bold))
-                        }
-
-                        Text(authViewModel.isLoading ? "Entrando..." : "Entrar")
-                            .font(.system(size: 17, weight: .bold))
-                    }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
-                    .background(
-                        LinearGradient(
-                            colors: [AppTheme.deepBlue, AppTheme.primaryBlue],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(authViewModel.isLoading || email.isEmpty || password.isEmpty)
-                .opacity(authViewModel.isLoading || email.isEmpty || password.isEmpty ? 0.65 : 1)
-            }
-        }
-    }
-
-    private func inputField(
-        title: String,
+    private func loginField(
         icon: String,
         text: Binding<String>,
         prompt: String,
         keyboardType: UIKeyboardType,
-        field: LoginField
+        field: LoginField,
+        isSecure: Bool
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(AppTheme.textPrimary)
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(focusedField == field ? AppTheme.deepBlue : AppTheme.textMuted)
+                .frame(width: 20)
 
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .foregroundStyle(focusedField == field ? AppTheme.deepBlue : AppTheme.textMuted)
-                    .frame(width: 20)
-
-                TextField("", text: text, prompt: Text(prompt).foregroundStyle(AppTheme.textMuted.opacity(0.65)))
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(keyboardType)
-                    .autocorrectionDisabled()
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .tint(AppTheme.deepBlue)
-                    .focused($focusedField, equals: field)
-                    .submitLabel(.next)
-                    .onSubmit {
-                        focusedField = .password
-                    }
+            Group {
+                if isSecure {
+                    SecureField(prompt, text: text)
+                        .submitLabel(.go)
+                        .onSubmit { submit() }
+                } else {
+                    TextField(prompt, text: text)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(keyboardType)
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .password }
+                }
             }
-            .padding(.horizontal, 16)
-            .frame(height: 62)
-            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(focusedField == field ? AppTheme.primaryBlue : AppTheme.fieldBorder, lineWidth: focusedField == field ? 1.4 : 1)
-            )
+            .autocorrectionDisabled()
+            .foregroundStyle(AppTheme.textPrimary)
+            .tint(AppTheme.deepBlue)
+            .focused($focusedField, equals: field)
         }
-    }
-
-    private func secureInputField(
-        title: String,
-        icon: String,
-        text: Binding<String>,
-        prompt: String,
-        field: LoginField
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(AppTheme.textPrimary)
-
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .foregroundStyle(focusedField == field ? AppTheme.deepBlue : AppTheme.textMuted)
-                    .frame(width: 20)
-
-                SecureField("", text: text, prompt: Text(prompt).foregroundStyle(AppTheme.textMuted.opacity(0.65)))
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .tint(AppTheme.deepBlue)
-                    .focused($focusedField, equals: field)
-                    .submitLabel(.go)
-                    .onSubmit {
-                        submit()
-                    }
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 62)
-            .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(focusedField == field ? AppTheme.primaryBlue : AppTheme.fieldBorder, lineWidth: focusedField == field ? 1.4 : 1)
-            )
-        }
+        .padding(.horizontal, 16)
+        .frame(height: 58)
     }
 
     private func submit() {
