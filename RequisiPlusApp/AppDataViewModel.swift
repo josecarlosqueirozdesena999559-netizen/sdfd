@@ -313,7 +313,7 @@ final class AppDataViewModel: ObservableObject {
         typingResetTask?.cancel()
         typingResetTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 1_500_000_000)
-            await self?.stopTyping()
+            self?.stopTyping()
         }
     }
 

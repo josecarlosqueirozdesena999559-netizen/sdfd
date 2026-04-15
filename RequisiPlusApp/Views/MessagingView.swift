@@ -15,19 +15,29 @@ struct MessagingView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 10) {
-                topBar
+            Group {
+                if canSwitchThreads && geometry.size.width >= 960 {
+                    HStack(spacing: 0) {
+                        threadsSidebar
+                            .frame(width: 320)
 
-                if canSwitchThreads {
-                    threadInboxCard(compact: geometry.size.width < 900)
+                        Divider()
+                            .overlay(AppTheme.fieldBorder.opacity(0.8))
+
+                        conversationSurface
+                    }
+                } else {
+                    VStack(spacing: 0) {
+                        topBar
+
+                        if canSwitchThreads {
+                            threadInboxStrip(compact: geometry.size.width < 700)
+                        }
+
+                        conversationSurface
+                    }
                 }
-
-                conversationCard
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 6)
-            .padding(.bottom, 8)
             .background(AppTheme.background.ignoresSafeArea())
         }
         .fileImporter(
@@ -86,61 +96,106 @@ struct MessagingView: View {
 
             Spacer()
         }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+        .background(AppTheme.surface)
     }
 
-    private func threadInboxCard(compact: Bool) -> some View {
-        PrimaryCard(padding: 16) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Conversas")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                    Spacer()
-                    Text("\(filteredThreads.count)")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(AppTheme.textMuted)
+    private var threadsSidebar: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Button(action: onBack) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 13, weight: .bold))
+                        Text("Inicio")
+                            .font(.system(size: 15, weight: .bold))
+                    }
+                    .foregroundStyle(AppTheme.deepBlue)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color.white, in: Capsule())
+                    .overlay(Capsule().stroke(AppTheme.fieldBorder, lineWidth: 1))
                 }
+                .buttonStyle(.plain)
 
-                SearchFieldRow(prompt: "Buscar conversa", text: $threadSearchText)
+                Spacer()
 
-                if filteredThreads.isEmpty {
-                    Text("Nenhuma conversa encontrada.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textMuted)
-                } else if compact {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(filteredThreads) { thread in
-                                threadPill(thread)
-                            }
+                Text("\(filteredThreads.count)")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(AppTheme.textMuted)
+            }
+
+            Text("Conversas")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+
+            SearchFieldRow(prompt: "Buscar conversa", text: $threadSearchText)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 10) {
+                    if filteredThreads.isEmpty {
+                        Text("Nenhuma conversa encontrada.")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.textMuted)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 8)
+                    } else {
+                        ForEach(filteredThreads) { thread in
+                            threadRow(thread)
                         }
-                        .padding(.vertical, 2)
                     }
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 10) {
-                            ForEach(filteredThreads) { thread in
-                                threadRow(thread)
-                            }
+                }
+                .padding(.bottom, 20)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .background(AppTheme.surface)
+    }
+
+    private func threadInboxStrip(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SearchFieldRow(prompt: "Buscar conversa", text: $threadSearchText)
+
+            if filteredThreads.isEmpty {
+                Text("Nenhuma conversa encontrada.")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(AppTheme.textMuted)
+            } else if compact {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(filteredThreads) { thread in
+                            threadPill(thread)
                         }
                     }
-                    .frame(maxHeight: 180)
+                    .padding(.vertical, 2)
+                }
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(filteredThreads) { thread in
+                            threadPill(thread)
+                        }
+                    }
+                    .padding(.vertical, 2)
                 }
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 12)
+        .background(AppTheme.surface)
     }
 
-    private var conversationCard: some View {
-        PrimaryCard(padding: 0) {
+    private var conversationSurface: some View {
+        Group {
             if let selectedThread {
                 VStack(spacing: 0) {
                     conversationHeader(for: selectedThread)
-                    Divider().overlay(AppTheme.fieldBorder)
                     messagesPanel
-                    Divider().overlay(AppTheme.fieldBorder)
                     composerBar
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Chat")
@@ -151,9 +206,10 @@ struct MessagingView: View {
                         .foregroundStyle(AppTheme.textMuted)
                 }
                 .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private func conversationHeader(for thread: ChatThread) -> some View {
@@ -173,6 +229,11 @@ struct MessagingView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(AppTheme.surface)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(AppTheme.fieldBorder.opacity(0.8))
+                .frame(height: 1)
+        }
     }
 
     private var messagesPanel: some View {
@@ -201,7 +262,13 @@ struct MessagingView: View {
                 .padding(.vertical, 14)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(LinearGradient(colors: [AppTheme.background, AppTheme.fieldFill], startPoint: .top, endPoint: .bottom))
+            .background(
+                LinearGradient(
+                    colors: [Color(hex: "#EAF3FF"), AppTheme.background, AppTheme.fieldFill],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
             .scrollDismissesKeyboard(.interactively)
             .contentShape(Rectangle())
             .onTapGesture { dismissKeyboard() }
@@ -262,7 +329,12 @@ struct MessagingView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(composerStrokeColor, lineWidth: isComposerFocused || isComposerEmpty == false ? 1.6 : 1)
+                )
+                .shadow(color: AppTheme.deepBlue.opacity(0.05), radius: 10, y: 2)
 
                 if recorder.isRecording == false {
                     Button {
@@ -293,8 +365,14 @@ struct MessagingView: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
         .background(AppTheme.surface)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(AppTheme.fieldBorder.opacity(0.8))
+                .frame(height: 1)
+        }
     }
 
     private var recordingComposerContent: some View {
@@ -615,6 +693,16 @@ struct MessagingView: View {
         return rawValue
     }
 
+    private var composerStrokeColor: Color {
+        if recorder.isRecording {
+            return AppTheme.danger.opacity(0.65)
+        }
+        if isComposerFocused || isComposerEmpty == false {
+            return AppTheme.primaryBlue.opacity(0.75)
+        }
+        return AppTheme.fieldBorder
+    }
+
     private var canSwitchThreads: Bool { appDataViewModel.canCurrentUserSwitchChatThreads }
     private var selectedThread: ChatThread? { appDataViewModel.chatThreads.first { $0.id == selectedThreadID } }
     private var filteredThreads: [ChatThread] {
@@ -897,7 +985,7 @@ final class ChatAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelega
     private func startMetering() {
         stopMetering()
         meterTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-            guard let self, let audioRecorder else { return }
+            guard let self, let audioRecorder = self.audioRecorder else { return }
             audioRecorder.updateMeters()
             self.recordingDuration = audioRecorder.currentTime
             self.waveformLevels.removeFirst()

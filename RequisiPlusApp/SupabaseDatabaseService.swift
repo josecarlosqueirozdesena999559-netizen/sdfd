@@ -935,7 +935,7 @@ private struct RequisicaoRecord: Decodable {
     func toDomain(position: Int, items: [RequisitionItem]) -> Requisition {
         let realCode = systemCode
 
-        Requisition(
+        return Requisition(
             id: id,
             code: realCode ?? resolvedCode(fallbackPosition: position),
             hasRealCode: realCode != nil,

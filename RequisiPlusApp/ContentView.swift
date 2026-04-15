@@ -71,13 +71,15 @@ private struct DashboardView: View {
 
                 currentScreen
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.top, selectedSection == .chat ? 12 : 8)
-                    .padding(.bottom, selectedSection == .chat ? 86 : 110)
+                    .padding(.top, selectedSection == .chat ? 0 : 8)
+                    .padding(.bottom, selectedSection == .chat ? 0 : 110)
             }
 
-            GlassTabBar(selectedSection: $selectedSection, availableSections: availableSections)
-                .padding(.horizontal, 18)
-                .padding(.bottom, 12)
+            if selectedSection != .chat {
+                GlassTabBar(selectedSection: $selectedSection, availableSections: availableSections)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 12)
+            }
         }
         .task {
             if appDataViewModel.profile == nil && appDataViewModel.isLoading == false {
@@ -197,7 +199,7 @@ private struct DashboardView: View {
             RequisitionsView(fixedFilter: .signed)
         case .chat:
             MessagingView {
-                selectedSection = lastNonChatSection
+                selectedSection = availableSections.contains(.inicio) ? .inicio : (availableSections.first ?? lastNonChatSection)
             }
         case .perfil:
             ProfileView()

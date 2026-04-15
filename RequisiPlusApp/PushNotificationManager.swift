@@ -126,7 +126,7 @@ final class PushNotificationManager: NSObject, ObservableObject {
         )
 
         await synchronizeDeliveredNotifications(activeIdentifiers: activeIdentifiers)
-        UIApplication.shared.applicationIconBadgeNumber = activeIdentifiers.count
+        await updateBadgeCount(activeIdentifiers.count)
     }
 
     private func persistDeliveredDashboardNotificationIds() {
@@ -186,6 +186,18 @@ final class PushNotificationManager: NSObject, ObservableObject {
 
         if stalePendingIdentifiers.isEmpty == false {
             notificationCenter.removePendingNotificationRequests(withIdentifiers: stalePendingIdentifiers)
+        }
+    }
+
+    private func updateBadgeCount(_ count: Int) async {
+        if #available(iOS 17.0, *) {
+            await withCheckedContinuation { continuation in
+                notificationCenter.setBadgeCount(count) { _ in
+                    continuation.resume()
+                }
+            }
+        } else {
+            UIApplication.shared.applicationIconBadgeNumber = count
         }
     }
 }

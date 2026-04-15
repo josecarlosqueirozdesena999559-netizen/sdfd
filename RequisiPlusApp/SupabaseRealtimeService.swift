@@ -233,7 +233,7 @@ final class SupabaseRealtimeService {
 
         reconnectTask = Task { [weak self] in
             guard let self else { return }
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
             self.reconnectTask = nil
             self.connect()
         }
