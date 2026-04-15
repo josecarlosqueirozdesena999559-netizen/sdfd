@@ -54,8 +54,8 @@ struct CreateRequisitionView: View {
     private var categorySelectorCard: some View {
         PrimaryCard {
             SectionHeader(
-                title: "Menu de materiais",
-                subtitle: "Escolha primeiro a categoria. Depois a tabela abre em tela cheia para facilitar a visualização."
+                title: "Escolha uma categoria",
+                subtitle: "Selecione o tipo de material para abrir a lista de itens e preencher a requisição com mais facilidade."
             )
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -78,8 +78,12 @@ struct CreateRequisitionView: View {
                             Text("\(filteredCatalogCount(for: material)) itens")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(AppTheme.textMuted)
+
+                            Text("Toque para abrir")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(AppTheme.deepBlue)
                         }
-                        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+                        .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
                         .padding(.horizontal, 16)
                         .background(categoryBackground())
                         .overlay(
@@ -131,7 +135,7 @@ struct CreateRequisitionView: View {
         PrimaryCard {
             SectionHeader(
                 title: "Itens de \(shortTitle(for: material))",
-                subtitle: "Visualização ampliada para preencher com mais conforto."
+                subtitle: "Preencha saldo e quantidade dos itens que deseja solicitar."
             )
 
             SearchFieldRow(
@@ -144,9 +148,9 @@ struct CreateRequisitionView: View {
             ScrollView {
                 LazyVStack(spacing: 14) {
                     if filteredItems(for: material).isEmpty {
-                            Text("Não existem itens cadastrados no banco para essa categoria.")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(AppTheme.textMuted)
+                        Text("Não existem itens cadastrados no banco para essa categoria.")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.textMuted)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
                         ForEach(filteredItems(for: material)) { item in
@@ -209,7 +213,7 @@ struct CreateRequisitionView: View {
             Text("Saldo")
                 .frame(width: 88, alignment: .center)
 
-            Text("Qtd")
+            Text("Quantidade")
                 .frame(width: 88, alignment: .center)
         }
         .font(.system(size: 12, weight: .bold))

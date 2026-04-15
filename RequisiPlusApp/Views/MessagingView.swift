@@ -184,7 +184,7 @@ struct MessagingView: View {
                             Image(systemName: "bubble.left.and.bubble.right")
                                 .font(.system(size: 20, weight: .semibold))
                                 .foregroundStyle(AppTheme.textMuted)
-                            Text("Ainda nao ha mensagens nesta conversa.")
+                            Text("Ainda não há mensagens nesta conversa.")
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(AppTheme.textPrimary)
                         }
@@ -303,7 +303,7 @@ struct MessagingView: View {
                 Circle()
                     .fill(AppTheme.danger)
                     .frame(width: 8, height: 8)
-                Text("Gravando audio")
+                Text("Gravando áudio")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
                 Text(formatTime(recorder.recordingDuration))
@@ -329,7 +329,7 @@ struct MessagingView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .top, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Audio pronto para revisar")
+                            Text("Áudio pronto para revisar")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(AppTheme.textPrimary)
                             Text("Escute antes de enviar ou remova se quiser gravar de novo.")
@@ -344,7 +344,7 @@ struct MessagingView: View {
 
                     ChatAudioClipPlayer(
                         source: .data(attachment.data, "m4a"),
-                        title: "Audio",
+                        title: "Áudio",
                         accentColor: AppTheme.primaryBlue,
                         foregroundColor: AppTheme.textPrimary,
                         backgroundColor: AppTheme.fieldFill,
@@ -539,7 +539,7 @@ struct MessagingView: View {
     }
 
     private func conversationStatusText(for thread: ChatThread) -> String {
-        if recorder.isRecording { return "Gravando audio..." }
+        if recorder.isRecording { return "Gravando áudio..." }
         if appDataViewModel.activeTypingIndicator?.threadId == thread.id { return "Digitando..." }
         if let lastSeenDate = latestSeenDate { return "Visto por ultimo \(lastSeenDescription(for: lastSeenDate))" }
         return thread.counterpartRole
@@ -610,7 +610,7 @@ struct MessagingView: View {
     private func displayPreviewText(for rawValue: String) -> String {
         let normalized = rawValue.normalizedSearchText
         if normalized == "audio.m4a" || normalized == "audio enviado" {
-            return "Audio"
+            return "Áudio"
         }
         return rawValue
     }
@@ -850,7 +850,7 @@ final class ChatAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelega
         try session.setActive(true)
 
         if await requestMicrophonePermission() == false {
-            throw NSError(domain: "ChatAudioRecorder", code: 1, userInfo: [NSLocalizedDescriptionKey: "Permissao de microfone negada."])
+            throw NSError(domain: "ChatAudioRecorder", code: 1, userInfo: [NSLocalizedDescriptionKey: "Permissão de microfone negada."])
         }
 
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).m4a")

@@ -298,7 +298,7 @@ struct StatusBadge: View {
 
     private var statusLabel: String {
         if normalized.contains("conclu") || normalized.contains("finaliz") || normalized.contains("entreg") {
-            return "Concluida"
+            return "Concluída"
         }
 
         if normalized.contains("andamento") || normalized.contains("conferencia") || normalized.contains("separ") {
@@ -313,7 +313,7 @@ struct StatusBadge: View {
     }
 
     private var tint: Color {
-        if statusLabel == "Concluida" {
+        if statusLabel == "Concluída" {
             return AppTheme.success
         }
 

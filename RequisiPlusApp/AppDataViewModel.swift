@@ -124,7 +124,7 @@ final class AppDataViewModel: ObservableObject {
         }
 
         guard entries.isEmpty == false else {
-            errorMessage = "Adicione pelo menos um item completo antes de enviar a requisiÃ§Ã£o."
+            errorMessage = "Adicione pelo menos um item completo antes de enviar a requisição."
             return
         }
 

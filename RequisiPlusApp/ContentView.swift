@@ -1,9 +1,9 @@
 import SwiftUI
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case inicio = "Inicio"
-    case fazerRequisicao = "Fazer requisicao"
-    case verRequisicoes = "Ver requisicoes"
+    case inicio = "Início"
+    case fazerRequisicao = "Fazer requisição"
+    case verRequisicoes = "Ver requisições"
     case adminPendentes = "Pendentes"
     case adminAssinadas = "Assinadas"
     case chat = "Chat"
@@ -204,7 +204,7 @@ private struct SessionLoadingView: View {
                     .tint(AppTheme.deepBlue)
                     .scaleEffect(1.2)
 
-                Text("Validando sua sessao...")
+                Text("Validando sua sessão...")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppTheme.deepBlue)
             }
@@ -269,11 +269,11 @@ extension AppSection {
     var headerTitle: String {
         switch self {
         case .inicio:
-            return "Inicio"
+            return "Início"
         case .fazerRequisicao:
-            return "Fazer requisicao"
+            return "Fazer requisição"
         case .verRequisicoes:
-            return "Requisicoes"
+            return "Requisições"
         case .adminPendentes:
             return "Pendentes"
         case .adminAssinadas:
@@ -288,11 +288,11 @@ extension AppSection {
     var tabTitle: String {
         switch self {
         case .inicio:
-            return "Inicio"
+            return "Início"
         case .fazerRequisicao:
-            return "Requisicao"
+            return "Requisição"
         case .verRequisicoes:
-            return "Requisicoes"
+            return "Requisições"
         case .adminPendentes:
             return "Pendentes"
         case .adminAssinadas:
@@ -317,8 +317,8 @@ private struct NotificationsSheet: View {
                 VStack(spacing: 12) {
                     if notifications.isEmpty {
                         SoftPanel {
-                            SectionHeader(title: "Sem notificacoes")
-                            Text("As novas mensagens e atualizacoes importantes vao aparecer aqui.")
+                            SectionHeader(title: "Sem notificações")
+                            Text("As novas mensagens e atualizações importantes vão aparecer aqui.")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(AppTheme.textMuted)
                         }
@@ -363,7 +363,7 @@ private struct NotificationsSheet: View {
                 .padding(16)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("Notificacoes")
+            .navigationTitle("Notificações")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Fechar") {
