@@ -5,6 +5,7 @@ struct RequisitionsView: View {
     private let fixedFilter: RequestFilter?
     @State private var searchText = ""
     @State private var selectedFilter: RequestFilter = .all
+    @State private var selectedRequisition: Requisition?
 
     init(fixedFilter: RequestFilter? = nil) {
         self.fixedFilter = fixedFilter
@@ -16,6 +17,10 @@ struct RequisitionsView: View {
             summaryCard
             searchCard
             listCard
+        }
+        .sheet(item: $selectedRequisition) { requisition in
+            RequisitionDetailsSheet(requisition: requisition)
+                .presentationDetents([.large])
         }
     }
 
@@ -106,33 +111,42 @@ struct RequisitionsView: View {
     }
 
     private func requisitionRow(_ requisition: Requisition) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(statusColor(for: requisition))
-                    .frame(width: 6, height: 54)
+        Button {
+            selectedRequisition = requisition
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(statusColor(for: requisition))
+                        .frame(width: 6, height: 54)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(requisition.code)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(AppTheme.deepBlue)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(requisition.code)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(AppTheme.deepBlue)
 
-                    Text(requisition.materialType.capitalized)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
+                        Text(requisition.materialType.capitalized)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+
+                    Spacer()
+
+                    StatusBadge(status: requisition.statusDisplay)
                 }
 
-                Spacer()
+                HStack(spacing: 10) {
+                    rowMeta(icon: "calendar", text: requisition.date)
+                    rowMeta(icon: "building.2", text: requisition.sector)
+                    rowMeta(icon: "shippingbox", text: requisition.materialType.capitalized)
+                }
 
-                StatusBadge(status: requisition.statusDisplay)
-            }
-
-            HStack(spacing: 10) {
-                rowMeta(icon: "calendar", text: requisition.date)
-                rowMeta(icon: "building.2", text: requisition.sector)
-                rowMeta(icon: "shippingbox", text: requisition.materialType.capitalized)
+                Text("Toque para ver os itens")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(AppTheme.deepBlue)
             }
         }
+        .buttonStyle(.plain)
         .padding(16)
         .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
@@ -322,5 +336,156 @@ struct StatusBadge: View {
         }
 
         return AppTheme.primaryBlue
+    }
+}
+
+private struct RequisitionDetailsSheet: View {
+    let requisition: Requisition
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    SoftPanel {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(requisition.code)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundStyle(AppTheme.deepBlue)
+
+                            Text(requisition.materialType.capitalized)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(AppTheme.textPrimary)
+
+                            HStack(spacing: 10) {
+                                detailPill(icon: "calendar", text: requisition.date)
+                                detailPill(icon: "building.2", text: requisition.sector)
+                                detailPill(icon: "person.crop.circle", text: requisition.requestedBy)
+                            }
+                        }
+                    }
+
+                    SoftPanel {
+                        VStack(alignment: .leading, spacing: 12) {
+                            SectionHeader(
+                                title: "Itens da requisição",
+                                subtitle: "\(requisition.items.count) item(ns) encontrado(s)."
+                            )
+
+                            requisitionItemsTable
+                        }
+                    }
+                }
+                .padding(16)
+            }
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationTitle("Detalhes")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fechar") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private var requisitionItemsTable: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                headerCell("Item", width: 44, alignment: .center)
+                headerCell("Descrição", alignment: .leading)
+                headerCell("Und.", width: 60, alignment: .center)
+                headerCell("Saldo Atual", width: 86, alignment: .center)
+                headerCell("Qtd. Req.", width: 86, alignment: .center)
+                headerCell("Qtd. Forn.", width: 86, alignment: .center)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(AppTheme.skyBlue.opacity(0.45), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            if requisition.items.isEmpty {
+                HStack(spacing: 8) {
+                    valueCell("-", width: 44, alignment: .center, muted: true)
+                    valueCell("Nenhum item preenchido", alignment: .leading, muted: true)
+                    valueCell("-", width: 60, alignment: .center, muted: true)
+                    valueCell("-", width: 86, alignment: .center, muted: true)
+                    valueCell("-", width: 86, alignment: .center, muted: true)
+                    valueCell("-", width: 86, alignment: .center, muted: true)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 14)
+            } else {
+                ForEach(Array(requisition.items.enumerated()), id: \.element.id) { index, item in
+                    HStack(spacing: 8) {
+                        valueCell("\(index + 1)", width: 44, alignment: .center)
+                        valueCell(item.name, alignment: .leading)
+                        valueCell(item.unit, width: 60, alignment: .center)
+                        valueCell(item.currentBalance.formattedQuantity, width: 86, alignment: .center)
+                        valueCell(item.requestedQuantity.formattedQuantity, width: 86, alignment: .center)
+                        valueCell(item.providedQuantity.formattedQuantity, width: 86, alignment: .center)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 14)
+
+                    if item.id != requisition.items.last?.id {
+                        Divider()
+                            .padding(.horizontal, 12)
+                    }
+                }
+            }
+        }
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(AppTheme.fieldBorder.opacity(0.9), lineWidth: 1)
+        )
+    }
+
+    private func detailPill(icon: String, text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+            Text(text)
+                .lineLimit(1)
+        }
+        .font(.system(size: 12, weight: .medium))
+        .foregroundStyle(AppTheme.textMuted)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.white.opacity(0.9), in: Capsule())
+    }
+
+    private func headerCell(_ title: String, width: CGFloat? = nil, alignment: Alignment = .leading) -> some View {
+        Text(title)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(AppTheme.textPrimary)
+            .frame(width: width, alignment: alignment)
+            .frame(maxWidth: width == nil ? .infinity : width, alignment: alignment)
+    }
+
+    private func valueCell(_ text: String, width: CGFloat? = nil, alignment: Alignment = .leading, muted: Bool = false) -> some View {
+        Text(text)
+            .font(.system(size: 13, weight: muted ? .medium : .semibold))
+            .foregroundStyle(muted ? AppTheme.textMuted : AppTheme.textPrimary)
+            .frame(width: width, alignment: alignment)
+            .frame(maxWidth: width == nil ? .infinity : width, alignment: alignment)
+    }
+}
+
+private extension Optional where Wrapped == Double {
+    var formattedQuantity: String {
+        guard let value = self else {
+            return "-"
+        }
+
+        if value.rounded() == value {
+            return String(Int(value))
+        }
+
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: value)) ?? String(value)
     }
 }

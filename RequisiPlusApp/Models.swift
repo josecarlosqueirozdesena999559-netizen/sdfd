@@ -16,6 +16,17 @@ struct Requisition: Identifiable {
     let status: String
     let date: String
     let requiresDesktopSignature: Bool
+    let items: [RequisitionItem]
+}
+
+struct RequisitionItem: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let unit: String
+    let currentBalance: Double?
+    let requestedQuantity: Double?
+    let providedQuantity: Double?
+    let sortOrder: Int
 }
 
 struct MaterialType: Identifiable, Hashable {

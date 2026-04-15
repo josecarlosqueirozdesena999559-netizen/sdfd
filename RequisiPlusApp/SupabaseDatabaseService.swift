@@ -51,8 +51,13 @@ struct SupabaseDatabaseService {
         let encodedSetor = profile.setor.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? profile.setor
         let path = "/rest/v1/requisicoes?select=*&solicitante=eq.\(encodedName)&setor=eq.\(encodedSetor)&order=created_at.desc"
         let records: [RequisicaoRecord] = try await perform(path: path, method: "GET", accessToken: userSession.accessToken)
+        let itemMap = try await fetchRequisitionItems(session: userSession, requisitionIds: records.map(\.id))
+
         return records.enumerated().map { index, record in
-            record.toDomain(position: index)
+            record.toDomain(
+                position: index,
+                items: itemMap[record.id] ?? record.legacyItems
+            )
         }
     }
 
@@ -344,7 +349,20 @@ struct SupabaseDatabaseService {
             )
         }
 
-        return record.toDomain(position: 0)
+        return record.toDomain(
+            position: 0,
+            items: itemRows.enumerated().map { index, row in
+                RequisitionItem(
+                    id: row.itemId,
+                    name: row.nome,
+                    unit: row.unidade,
+                    currentBalance: row.qtdDisponivel,
+                    requestedQuantity: row.qtdNecessaria,
+                    providedQuantity: row.qtdFornecida,
+                    sortOrder: index
+                )
+            }
+        )
     }
 
     private static func encodeJSONString<T: Encodable>(_ value: T) -> String {
@@ -354,6 +372,27 @@ struct SupabaseDatabaseService {
             return "[]"
         }
         return json
+    }
+
+    private func fetchRequisitionItems(
+        session userSession: UserSession,
+        requisitionIds: [String]
+    ) async throws -> [String: [RequisitionItem]] {
+        guard requisitionIds.isEmpty == false else {
+            return [:]
+        }
+
+        let encodedIds = requisitionIds
+            .map { "\"\($0)\"" }
+            .map { $0.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0 }
+            .joined(separator: ",")
+
+        let path = "/rest/v1/requisicao_itens?select=id,requisicao_id,ordem,nome,unidade,qtd_disponivel,qtd_necessaria,qtd_fornecida&requisicao_id=in.(\(encodedIds))&order=ordem.asc"
+        let records: [RequisitionItemRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
+
+        return records.reduce(into: [:]) { partialResult, record in
+            partialResult[record.requisicaoId, default: []].append(record.toDomain())
+        }
     }
 
     private func fetchFirst<Response: Decodable>(path: String, accessToken: String) async throws -> Response? {
@@ -542,6 +581,9 @@ struct SupabaseDatabaseService {
             return [] as? Response
         }
         if Response.self == [PushTokenRecord].self {
+            return [] as? Response
+        }
+        if Response.self == [RequisitionItemRecord].self {
             return [] as? Response
         }
         return nil
@@ -817,6 +859,7 @@ private struct RequisicaoRecord: Decodable {
     let codigo: JSONValue?
     let numeroRequisicao: JSONValue?
     let numeroSolicitacao: JSONValue?
+    let items: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -833,9 +876,10 @@ private struct RequisicaoRecord: Decodable {
         case codigo
         case numeroRequisicao = "numero_requisicao"
         case numeroSolicitacao = "numero_solicitacao"
+        case items
     }
 
-    func toDomain(position: Int) -> Requisition {
+    func toDomain(position: Int, items: [RequisitionItem]) -> Requisition {
         Requisition(
             id: id,
             code: resolvedCode(fallbackPosition: position),
@@ -844,8 +888,21 @@ private struct RequisicaoRecord: Decodable {
             requestedBy: solicitante,
             status: status,
             date: data,
-            requiresDesktopSignature: signedAttachment == nil && status.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current).contains("assin")
+            requiresDesktopSignature: signedAttachment == nil && status.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current).contains("assin"),
+            items: items.sorted { $0.sortOrder < $1.sortOrder }
         )
+    }
+
+    var legacyItems: [RequisitionItem] {
+        guard let items, items.isEmpty == false, let data = items.data(using: .utf8) else {
+            return []
+        }
+
+        let decoder = JSONDecoder()
+        let records = (try? decoder.decode([LegacyRequisitionItemRecord].self, from: data)) ?? []
+        return records.enumerated().map { index, record in
+            record.toDomain(index: index)
+        }
     }
 
     private func resolvedCode(fallbackPosition: Int) -> String {
@@ -1083,4 +1140,64 @@ private struct RequisitionItemInsertPayload: Encodable {
 
 private struct RequisitionItemInsertResult: Decodable {
     let id: String
+}
+
+private struct RequisitionItemRecord: Decodable {
+    let id: String
+    let requisicaoId: String
+    let ordem: Int?
+    let nome: String?
+    let unidade: String?
+    let qtdDisponivel: Double?
+    let qtdNecessaria: Double?
+    let qtdFornecida: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case requisicaoId = "requisicao_id"
+        case ordem
+        case nome
+        case unidade
+        case qtdDisponivel = "qtd_disponivel"
+        case qtdNecessaria = "qtd_necessaria"
+        case qtdFornecida = "qtd_fornecida"
+    }
+
+    func toDomain() -> RequisitionItem {
+        RequisitionItem(
+            id: id,
+            name: nome?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "Item sem descrição",
+            unit: unidade?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "-",
+            currentBalance: qtdDisponivel,
+            requestedQuantity: qtdNecessaria,
+            providedQuantity: qtdFornecida,
+            sortOrder: ordem ?? 0
+        )
+    }
+}
+
+private struct LegacyRequisitionItemRecord: Decodable {
+    let item: String?
+    let unit: String?
+    let stock: Double?
+    let need: Double?
+    let provided: Double?
+
+    func toDomain(index: Int) -> RequisitionItem {
+        RequisitionItem(
+            id: "legacy-item-\(index)",
+            name: item?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "Item sem descrição",
+            unit: unit?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? "-",
+            currentBalance: stock,
+            requestedQuantity: need,
+            providedQuantity: provided,
+            sortOrder: index
+        )
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
+    }
 }
