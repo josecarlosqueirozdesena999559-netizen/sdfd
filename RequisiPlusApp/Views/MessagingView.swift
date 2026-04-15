@@ -6,6 +6,7 @@ struct MessagingView: View {
     @EnvironmentObject private var appDataViewModel: AppDataViewModel
     @FocusState private var isComposerFocused: Bool
     let onBack: () -> Void
+    @State private var keyboardInset: CGFloat = 0
     @State private var messageText = ""
     @State private var selectedThreadID: String?
     @State private var showingFileImporter = false
@@ -71,7 +72,13 @@ struct MessagingView: View {
         .onDisappear {
             appDataViewModel.stopTyping()
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
+            guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            keyboardInset = max(0, frame.height - 12)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardInset = 0
+        }
     }
 
     private var topBar: some View {
@@ -311,21 +318,6 @@ struct MessagingView: View {
                             .tint(AppTheme.deepBlue)
                             .focused($isComposerFocused)
                     }
-
-                    Button {
-                        Task {
-                            if recorder.isRecording {
-                                pendingAttachment = try? await recorder.stopRecording()
-                            } else {
-                                try? await recorder.startRecording()
-                            }
-                        }
-                    } label: {
-                        Image(systemName: recorder.isRecording ? "stop.fill" : "mic.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(recorder.isRecording ? AppTheme.danger : AppTheme.textMuted)
-                    }
-                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
@@ -336,7 +328,7 @@ struct MessagingView: View {
                 )
                 .shadow(color: AppTheme.deepBlue.opacity(0.05), radius: 10, y: 2)
 
-                if recorder.isRecording == false {
+                if recorder.isRecording == false && isComposerEmpty == false {
                     Button {
                         guard let selectedThread else { return }
                         Task {
@@ -361,12 +353,32 @@ struct MessagingView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(selectedThread == nil || isComposerEmpty)
+                } else {
+                    Button {
+                        Task {
+                            if recorder.isRecording {
+                                pendingAttachment = try? await recorder.stopRecording()
+                            } else {
+                                try? await recorder.startRecording()
+                            }
+                        }
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(recorder.isRecording ? AppTheme.danger.opacity(0.16) : AppTheme.fieldFill)
+                                .frame(width: 46, height: 46)
+                            Image(systemName: recorder.isRecording ? "stop.fill" : "mic.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(recorder.isRecording ? AppTheme.danger : AppTheme.textMuted)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
         .padding(.horizontal, 12)
         .padding(.top, 10)
-        .padding(.bottom, 12)
+        .padding(.bottom, max(12, keyboardInset))
         .background(AppTheme.surface)
         .overlay(alignment: .top) {
             Rectangle()
