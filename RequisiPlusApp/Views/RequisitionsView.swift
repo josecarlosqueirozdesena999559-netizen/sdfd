@@ -159,7 +159,7 @@ enum RequestFilter: String, CaseIterable, Identifiable {
                 || status.contains("conferencia")
                 || status.contains("recebido")
         case .signed:
-            return requisition.normalizedStatus.contains("assin")
+            return RequestFilter.done.matches(requisition: requisition)
         case .done:
             let status = requisition.normalizedStatus
             return status.contains("conclu") || status.contains("finaliz") || status.contains("entreg")

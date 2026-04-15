@@ -195,7 +195,7 @@ private struct DashboardView: View {
 
     private var availableSections: [AppSection] {
         if appDataViewModel.profile?.isAdmin == true {
-            return [.adminPendentes, .adminAssinadas]
+            return [.adminPendentes, .adminAssinadas, .chat, .perfil]
         }
 
         return [.inicio, .fazerRequisicao, .verRequisicoes, .chat, .perfil]
@@ -314,7 +314,7 @@ extension AppSection {
         case .adminPendentes:
             return "Pendentes"
         case .adminAssinadas:
-            return "Assinadas"
+            return "Concluídas"
         case .chat:
             return "Chat"
         case .perfil:
@@ -333,7 +333,7 @@ extension AppSection {
         case .adminPendentes:
             return "Pendentes"
         case .adminAssinadas:
-            return "Assinadas"
+            return "Concluídas"
         case .chat:
             return "Chat"
         case .perfil:

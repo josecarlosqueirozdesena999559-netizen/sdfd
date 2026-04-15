@@ -47,9 +47,16 @@ struct SupabaseDatabaseService {
     }
 
     func fetchRequisitions(session userSession: UserSession, profile: UserProfile) async throws -> [Requisition] {
-        let encodedName = profile.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? profile.name
-        let encodedSetor = profile.setor.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? profile.setor
-        let path = "/rest/v1/requisicoes?select=*&solicitante=eq.\(encodedName)&setor=eq.\(encodedSetor)&order=created_at.desc"
+        let path: String
+
+        if profile.isAdmin {
+            path = "/rest/v1/requisicoes?select=*&order=setor.asc,created_at.desc"
+        } else {
+            let encodedName = profile.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? profile.name
+            let encodedSetor = profile.setor.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? profile.setor
+            path = "/rest/v1/requisicoes?select=*&solicitante=eq.\(encodedName)&setor=eq.\(encodedSetor)&order=created_at.desc"
+        }
+
         let records: [RequisicaoRecord] = try await perform(path: path, method: "GET", accessToken: userSession.accessToken)
         let itemMap = try await fetchRequisitionItems(session: userSession, requisitionIds: records.map(\.id))
 
