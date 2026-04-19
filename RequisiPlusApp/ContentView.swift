@@ -387,6 +387,7 @@ struct AppHeroHeader: View {
                 .fill(Color.white.opacity(0.08))
                 .frame(width: 160, height: 160)
                 .offset(x: 56, y: -72)
+                .allowsHitTesting(false)
         }
     }
 
