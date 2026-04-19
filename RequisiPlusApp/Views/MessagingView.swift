@@ -11,6 +11,7 @@ struct MessagingView: View {
     @State private var selectedThreadID: String?
     @State private var showingFileImporter = false
     @State private var threadSearchText = ""
+    @State private var dragOffset: CGFloat = 0
     @StateObject private var recorder = ChatAudioRecorder()
     @State private var pendingAttachment: ChatAttachmentUpload?
 
@@ -37,6 +38,9 @@ struct MessagingView: View {
 
                         conversationSurface
                     }
+                    .offset(y: dragOffset)
+                    .scaleEffect(mobileChatScale, anchor: .top)
+                    .gesture(chatDismissGesture)
                 }
             }
             .background(AppTheme.background.ignoresSafeArea())
@@ -717,6 +721,48 @@ struct MessagingView: View {
             return AppTheme.primaryBlue.opacity(0.75)
         }
         return AppTheme.fieldBorder
+    }
+
+    private var mobileChatScale: CGFloat {
+        guard dragOffset > 0 else { return 1 }
+        return max(0.96, 1 - (dragOffset / 2200))
+    }
+
+    private var chatDismissGesture: some Gesture {
+        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+            .onChanged { value in
+                guard shouldTrackDismissDrag(value) else { return }
+                dragOffset = min(max(0, value.translation.height), 140)
+            }
+            .onEnded { value in
+                handleDismissDragEnded(value)
+            }
+    }
+
+    private func shouldTrackDismissDrag(_ value: DragGesture.Value) -> Bool {
+        let vertical = value.translation.height
+        let horizontal = abs(value.translation.width)
+        return vertical > 0 && vertical > horizontal
+    }
+
+    private func handleDismissDragEnded(_ value: DragGesture.Value) {
+        defer {
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.82)) {
+                dragOffset = 0
+            }
+        }
+
+        guard shouldTrackDismissDrag(value) else { return }
+
+        let shouldDismissKeyboard = keyboardInset > 0 || isComposerFocused
+        if shouldDismissKeyboard {
+            dismissKeyboard()
+            return
+        }
+
+        if value.translation.height > 90 {
+            onBack()
+        }
     }
 
     private var canSwitchThreads: Bool { appDataViewModel.canCurrentUserSwitchChatThreads }
