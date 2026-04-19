@@ -81,6 +81,9 @@ private struct DashboardView: View {
                         unreadNotificationCount: appDataViewModel.userFacingUnreadNotificationCount,
                         onNotificationsTap: {
                             showingNotifications = true
+                            Task {
+                                await appDataViewModel.markVisibleNotificationsAsRead()
+                            }
                         }
                     )
                 }
@@ -463,6 +466,7 @@ private struct NotificationsSheet: View {
                         }
                     } else {
                         ForEach(notifications) { notification in
+                            let showsUnreadStyle = notification.isSystemNotification == false && notification.isRead == false
                             Button {
                                 Task {
                                     await onOpenNotification(notification)
@@ -470,9 +474,9 @@ private struct NotificationsSheet: View {
                             } label: {
                                 SoftPanel(padding: 16) {
                                     HStack(alignment: .top, spacing: 12) {
-                                        Image(systemName: notification.isRead ? "bell" : "bell.badge.fill")
+                                        Image(systemName: showsUnreadStyle ? "bell.badge.fill" : "bell")
                                             .font(.system(size: 16, weight: .bold))
-                                            .foregroundStyle(notification.isRead ? AppTheme.textMuted : AppTheme.deepBlue)
+                                            .foregroundStyle(showsUnreadStyle ? AppTheme.deepBlue : AppTheme.textMuted)
 
                                         VStack(alignment: .leading, spacing: 6) {
                                             Text(notification.title)
@@ -519,3 +523,4 @@ private struct NotificationsSheet: View {
         }
     }
 }
+

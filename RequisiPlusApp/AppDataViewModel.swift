@@ -69,40 +69,40 @@ final class AppDataViewModel: ObservableObject {
     var userFacingDashboardAlert: DashboardAlert {
         if hasSignaturePending {
             return DashboardAlert(
-                title: "VocÃª tem requisiÃ§Ãµes para assinatura.",
-                message: "Abra a aba de requisiÃ§Ãµes para localizar os itens que ainda dependem da sua assinatura.",
-                actionTitle: "Ver requisiÃ§Ãµes"
+                title: "Você tem requisições para assinatura.",
+                message: "Abra a aba de requisições para localizar os itens que ainda dependem da sua assinatura.",
+                actionTitle: "Ver requisições"
             )
         }
 
         if hasSignatureAvailable {
             return DashboardAlert(
-                title: "VocÃª tem assinaturas disponÃ­veis.",
-                message: "O admin jÃ¡ anexou a saÃ­da no sistema. Abra suas requisiÃ§Ãµes para conferir e assinar.",
-                actionTitle: "Ver requisiÃ§Ãµes"
+                title: "Você tem assinaturas disponíveis.",
+                message: "O admin já anexou a saída no sistema. Abra suas requisições para conferir e assinar.",
+                actionTitle: "Ver requisições"
             )
         }
 
         if hasCompletedRequisition {
             return DashboardAlert(
-                title: "VocÃª concluiu sua requisiÃ§Ã£o.",
-                message: "Sua assinatura foi registrada com sucesso. Confira o histÃ³rico na aba de requisiÃ§Ãµes.",
-                actionTitle: "Ver requisiÃ§Ãµes"
+                title: "Você concluiu sua requisição.",
+                message: "Sua assinatura foi registrada com sucesso. Confira o histórico na aba de requisições.",
+                actionTitle: "Ver requisições"
             )
         }
 
         if hasSubmittedRequisition {
             return DashboardAlert(
-                title: "Sua requisiÃ§Ã£o foi enviada.",
-                message: "Agora Ã© sÃ³ acompanhar o andamento atÃ© a etapa de assinatura.",
-                actionTitle: "Ver requisiÃ§Ãµes"
+                title: "Sua requisição foi enviada.",
+                message: "Agora é só acompanhar o andamento até a etapa de assinatura.",
+                actionTitle: "Ver requisições"
             )
         }
 
         return DashboardAlert(
-            title: "Sem pendÃªncias no momento.",
-            message: "Suas requisiÃ§Ãµes estÃ£o em dia. VocÃª pode abrir uma nova requisiÃ§Ã£o quando precisar.",
-            actionTitle: "Fazer requisiÃ§Ã£o"
+            title: "Sem pendências no momento.",
+            message: "Suas requisições estão em dia. Você pode abrir uma nova requisição quando precisar.",
+            actionTitle: "Fazer requisição"
         )
     }
 
@@ -570,8 +570,8 @@ final class AppDataViewModel: ObservableObject {
             return [
                 NotificationItem(
                     id: "workflow-signature-pending",
-                    title: "RequisiÃ§Ãµes para assinatura",
-                    body: "VocÃª tem requisiÃ§Ãµes para assinatura.",
+                    title: "Requisições para assinatura",
+                    body: "Você tem requisições para assinatura.",
                     createdAt: nil,
                     isRead: false,
                     targetThreadId: nil,
@@ -585,8 +585,8 @@ final class AppDataViewModel: ObservableObject {
             return [
                 NotificationItem(
                     id: "workflow-signature-ready",
-                    title: "Assinaturas disponÃ­veis",
-                    body: "VocÃª tem assinaturas disponÃ­veis.",
+                    title: "Assinaturas disponíveis",
+                    body: "Você tem assinaturas disponíveis.",
                     createdAt: nil,
                     isRead: false,
                     targetThreadId: nil,
@@ -600,8 +600,8 @@ final class AppDataViewModel: ObservableObject {
             return [
                 NotificationItem(
                     id: "workflow-requisition-completed",
-                    title: "RequisiÃ§Ã£o concluÃ­da",
-                    body: "VocÃª concluiu sua requisiÃ§Ã£o.",
+                    title: "Requisição concluída",
+                    body: "Você concluiu sua requisição.",
                     createdAt: nil,
                     isRead: false,
                     targetThreadId: nil,
@@ -615,8 +615,8 @@ final class AppDataViewModel: ObservableObject {
             return [
                 NotificationItem(
                     id: "workflow-requisition-submitted",
-                    title: "RequisiÃ§Ã£o enviada",
-                    body: "Sua requisiÃ§Ã£o foi enviada.",
+                    title: "Requisição enviada",
+                    body: "Sua requisição foi enviada.",
                     createdAt: nil,
                     isRead: false,
                     targetThreadId: nil,
@@ -675,3 +675,4 @@ final class AppDataViewModel: ObservableObject {
         ]
     }
 }
+
