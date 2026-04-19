@@ -318,6 +318,7 @@ struct SupabaseDatabaseService {
         entries: [RequestedItemEntry],
         observation: String
     ) async throws -> Requisition {
+        let now = Date()
         let itemPayload = entries.enumerated().map { index, entry in
             RequisitionItemPayload(
                 item: entry.item.name,
@@ -331,14 +332,19 @@ struct SupabaseDatabaseService {
             )
         }
 
+        let requestCode = try await generateRequestCode(
+            session: userSession,
+            requestDate: now
+        )
+
         let payload = NewRequisitionPayload(
             setor: profile.setor,
             solicitante: profile.name,
             categoria: materialType.title,
-            data: DateFormatter.requisitionDate.string(from: Date()),
-            items: Self.encodeJSONString(itemPayload),
-            status: "aguardando_assinatura_requisicao",
-            saidaCodigo: nil,
+            data: DateFormatter.requisitionDate.string(from: now),
+            items: itemPayload,
+            status: "recebido",
+            saidaCodigo: requestCode,
             numeroRequisicao: nil,
             numeroSolicitacao: nil,
             solicitanteCpf: profile.cpf,
@@ -401,13 +407,35 @@ struct SupabaseDatabaseService {
         )
     }
 
-    private static func encodeJSONString<T: Encodable>(_ value: T) -> String {
-        let encoder = JSONEncoder()
-        guard let data = try? encoder.encode(value),
-              let json = String(data: data, encoding: .utf8) else {
-            return "[]"
-        }
-        return json
+    private func generateRequestCode(
+        session userSession: UserSession,
+        requestDate: Date
+    ) async throws -> String {
+        let requestDateString = DateFormatter.requisitionDate.string(from: requestDate)
+        let prefix = DateFormatter.requisitionCodePrefix.string(from: requestDate)
+        let encodedDate = requestDateString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? requestDateString
+        let path = "/rest/v1/requisicoes?select=saida_codigo&data=eq.\(encodedDate)"
+
+        let existingRecords: [ExistingRequestCodeRecord] = try await performOptional(
+            path: path,
+            method: "GET",
+            accessToken: userSession.accessToken
+        )
+
+        let nextSequence = existingRecords.reduce(0) { currentMax, record in
+            guard
+                let code = record.saidaCodigo?.trimmingCharacters(in: .whitespacesAndNewlines),
+                code.hasPrefix(prefix),
+                code.count == prefix.count + 3,
+                let sequence = Int(code.suffix(3))
+            else {
+                return currentMax
+            }
+
+            return max(currentMax, sequence)
+        } + 1
+
+        return "\(prefix)\(String(format: "%03d", nextSequence))"
     }
 
     private func fetchRequisitionItems(
@@ -962,12 +990,20 @@ private struct RequisicaoRecord: Decodable {
     }
 }
 
+private struct ExistingRequestCodeRecord: Decodable {
+    let saidaCodigo: String?
+
+    enum CodingKeys: String, CodingKey {
+        case saidaCodigo = "saida_codigo"
+    }
+}
+
 private struct NewRequisitionPayload: Encodable {
     let setor: String
     let solicitante: String
     let categoria: String
     let data: String
-    let items: String
+    let items: [RequisitionItemPayload]
     let status: String
     let saidaCodigo: String?
     let numeroRequisicao: String?
@@ -1003,6 +1039,13 @@ private extension DateFormatter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "pt_BR")
         formatter.dateFormat = "dd/MM/yyyy"
+        return formatter
+    }()
+
+    static let requisitionCodePrefix: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "ddMMyy"
         return formatter
     }()
 
