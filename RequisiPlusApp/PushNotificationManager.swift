@@ -208,9 +208,6 @@ extension PushNotificationManager: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        Task { @MainActor in
-            handleNotificationPayload(notification.request.content.userInfo)
-        }
         completionHandler([.banner, .sound, .badge])
     }
 
