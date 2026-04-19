@@ -850,10 +850,12 @@ private final class ChatAudioPlaybackController: NSObject, ObservableObject, AVA
     private func startTimer() {
         stopTimer()
         timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
-            guard let self, let audioPlayer else { return }
-            self.currentTime = audioPlayer.currentTime
-            self.duration = audioPlayer.duration
-            self.isPlaying = audioPlayer.isPlaying
+            Task { @MainActor [weak self] in
+                guard let self, let audioPlayer = self.audioPlayer else { return }
+                self.currentTime = audioPlayer.currentTime
+                self.duration = audioPlayer.duration
+                self.isPlaying = audioPlayer.isPlaying
+            }
         }
     }
 
@@ -1044,8 +1046,14 @@ final class ChatAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelega
 
     private func requestMicrophonePermission() async -> Bool {
         await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                continuation.resume(returning: granted)
+            if #available(iOS 17.0, *) {
+                AVAudioApplication.requestRecordPermission { granted in
+                    continuation.resume(returning: granted)
+                }
+            } else {
+                AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                    continuation.resume(returning: granted)
+                }
             }
         }
     }
