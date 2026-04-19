@@ -22,8 +22,9 @@ struct LoginView: View {
                         onNotificationsTap: {}
                     )
 
+                    Spacer(minLength: 28)
                     formSection
-                    Spacer(minLength: max(28, geometry.safeAreaInsets.bottom + 16))
+                    Spacer(minLength: max(48, geometry.safeAreaInsets.bottom + 20))
                 }
             }
             .contentShape(Rectangle())
@@ -103,7 +104,8 @@ struct LoginView: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.top, 24)
+        .frame(maxWidth: 520)
+        .padding(.top, 10)
     }
 
     private func loginField(

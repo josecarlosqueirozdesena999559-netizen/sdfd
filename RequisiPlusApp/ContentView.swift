@@ -280,6 +280,7 @@ private struct SessionLoadingView: View {
 
 private struct LaunchSplashView: View {
     @State private var revealWord = false
+    @State private var hideInitialPlus = false
     @State private var revealPlusAtEnd = false
 
     var body: some View {
@@ -305,13 +306,14 @@ private struct LaunchSplashView: View {
                 Text("+")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
-                    .offset(x: revealWord ? -2 : 0)
+                    .opacity(hideInitialPlus ? 0 : 1)
+                    .frame(width: hideInitialPlus ? 0 : nil, alignment: .leading)
 
                 Text("equisi")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
                     .opacity(revealWord ? 1 : 0)
-                    .offset(x: revealWord ? 0 : -18)
+                    .offset(x: revealWord ? 0 : -10)
 
                 Text("+")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
@@ -322,11 +324,14 @@ private struct LaunchSplashView: View {
             .shadow(color: AppTheme.deepBlue.opacity(0.28), radius: 18, y: 10)
         }
         .task {
+            try? await Task.sleep(for: .milliseconds(180))
+
             withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                hideInitialPlus = true
                 revealWord = true
             }
 
-            try? await Task.sleep(for: .milliseconds(420))
+            try? await Task.sleep(for: .milliseconds(360))
 
             withAnimation(.easeOut(duration: 0.25)) {
                 revealPlusAtEnd = true
