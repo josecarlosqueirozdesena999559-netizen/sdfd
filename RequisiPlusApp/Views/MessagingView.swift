@@ -788,7 +788,7 @@ struct MessagingView: View {
 private enum ChatAudioSource { case remote(URL?), data(Data, String) }
 
 @MainActor
-private final class ChatAudioPlaybackController: NSObject, ObservableObject, AVAudioPlayerDelegate {
+private final class ChatAudioPlaybackController: NSObject, ObservableObject, @preconcurrency AVAudioPlayerDelegate {
     @Published private(set) var isPlaying = false
     @Published private(set) var isLoading = false
     @Published private(set) var currentTime: TimeInterval = 0

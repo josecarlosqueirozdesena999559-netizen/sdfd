@@ -66,6 +66,46 @@ final class AppDataViewModel: ObservableObject {
         )
     }
 
+    var userFacingDashboardAlert: DashboardAlert {
+        if hasSignaturePending {
+            return DashboardAlert(
+                title: "VocÃª tem requisiÃ§Ãµes para assinatura.",
+                message: "Abra a aba de requisiÃ§Ãµes para localizar os itens que ainda dependem da sua assinatura.",
+                actionTitle: "Ver requisiÃ§Ãµes"
+            )
+        }
+
+        if hasSignatureAvailable {
+            return DashboardAlert(
+                title: "VocÃª tem assinaturas disponÃ­veis.",
+                message: "O admin jÃ¡ anexou a saÃ­da no sistema. Abra suas requisiÃ§Ãµes para conferir e assinar.",
+                actionTitle: "Ver requisiÃ§Ãµes"
+            )
+        }
+
+        if hasCompletedRequisition {
+            return DashboardAlert(
+                title: "VocÃª concluiu sua requisiÃ§Ã£o.",
+                message: "Sua assinatura foi registrada com sucesso. Confira o histÃ³rico na aba de requisiÃ§Ãµes.",
+                actionTitle: "Ver requisiÃ§Ãµes"
+            )
+        }
+
+        if hasSubmittedRequisition {
+            return DashboardAlert(
+                title: "Sua requisiÃ§Ã£o foi enviada.",
+                message: "Agora Ã© sÃ³ acompanhar o andamento atÃ© a etapa de assinatura.",
+                actionTitle: "Ver requisiÃ§Ãµes"
+            )
+        }
+
+        return DashboardAlert(
+            title: "Sem pendÃªncias no momento.",
+            message: "Suas requisiÃ§Ãµes estÃ£o em dia. VocÃª pode abrir uma nova requisiÃ§Ã£o quando precisar.",
+            actionTitle: "Fazer requisiÃ§Ã£o"
+        )
+    }
+
     func load() async {
         await performLoad(showLoading: true)
     }
@@ -84,6 +124,22 @@ final class AppDataViewModel: ObservableObject {
 
     var notificationSyncKey: String {
         inboxNotifications
+            .map { "\($0.id):\($0.isRead ? "1" : "0")" }
+            .joined(separator: "|")
+    }
+
+    var userFacingNotifications: [NotificationItem] {
+        workflowNotifications + notifications.sorted {
+            ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast)
+        }
+    }
+
+    var userFacingUnreadNotificationCount: Int {
+        userFacingNotifications.filter { $0.isRead == false }.count
+    }
+
+    var userFacingNotificationSyncKey: String {
+        userFacingNotifications
             .map { "\($0.id):\($0.isRead ? "1" : "0")" }
             .joined(separator: "|")
     }
@@ -507,6 +563,95 @@ final class AppDataViewModel: ObservableObject {
         }
 
         return []
+    }
+
+    private var workflowNotifications: [NotificationItem] {
+        if hasSignaturePending {
+            return [
+                NotificationItem(
+                    id: "workflow-signature-pending",
+                    title: "RequisiÃ§Ãµes para assinatura",
+                    body: "VocÃª tem requisiÃ§Ãµes para assinatura.",
+                    createdAt: nil,
+                    isRead: false,
+                    targetThreadId: nil,
+                    targetSection: AppSection.verRequisicoes.rawValue,
+                    isSystemNotification: true
+                )
+            ]
+        }
+
+        if hasSignatureAvailable {
+            return [
+                NotificationItem(
+                    id: "workflow-signature-ready",
+                    title: "Assinaturas disponÃ­veis",
+                    body: "VocÃª tem assinaturas disponÃ­veis.",
+                    createdAt: nil,
+                    isRead: false,
+                    targetThreadId: nil,
+                    targetSection: AppSection.verRequisicoes.rawValue,
+                    isSystemNotification: true
+                )
+            ]
+        }
+
+        if hasCompletedRequisition {
+            return [
+                NotificationItem(
+                    id: "workflow-requisition-completed",
+                    title: "RequisiÃ§Ã£o concluÃ­da",
+                    body: "VocÃª concluiu sua requisiÃ§Ã£o.",
+                    createdAt: nil,
+                    isRead: false,
+                    targetThreadId: nil,
+                    targetSection: AppSection.verRequisicoes.rawValue,
+                    isSystemNotification: true
+                )
+            ]
+        }
+
+        if hasSubmittedRequisition {
+            return [
+                NotificationItem(
+                    id: "workflow-requisition-submitted",
+                    title: "RequisiÃ§Ã£o enviada",
+                    body: "Sua requisiÃ§Ã£o foi enviada.",
+                    createdAt: nil,
+                    isRead: false,
+                    targetThreadId: nil,
+                    targetSection: AppSection.verRequisicoes.rawValue,
+                    isSystemNotification: true
+                )
+            ]
+        }
+
+        return []
+    }
+
+    private var hasSignaturePending: Bool {
+        requisitions.contains(\.requiresDesktopSignature)
+    }
+
+    private var hasSignatureAvailable: Bool {
+        requisitions.contains {
+            let status = $0.normalizedStatus
+            return status.contains("assin") && $0.requiresDesktopSignature == false
+        }
+    }
+
+    private var hasCompletedRequisition: Bool {
+        requisitions.contains {
+            let status = $0.normalizedStatus
+            return status.contains("conclu") || status.contains("finaliz") || status.contains("entreg")
+        }
+    }
+
+    private var hasSubmittedRequisition: Bool {
+        requisitions.contains {
+            let status = $0.normalizedStatus
+            return status.contains("aguardando") || status.contains("pendente") || status.contains("recebido")
+        }
     }
 
     private static func realtimeSubscriptions(for authUserId: String) -> [SupabaseRealtimeService.Subscription] {
