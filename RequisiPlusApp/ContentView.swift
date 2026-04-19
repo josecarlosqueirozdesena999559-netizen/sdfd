@@ -282,6 +282,7 @@ private struct LaunchSplashView: View {
     @State private var revealWord = false
     @State private var hideInitialPlus = false
     @State private var revealPlusAtEnd = false
+    @State private var logoLift = false
 
     var body: some View {
         ZStack {
@@ -302,38 +303,47 @@ private struct LaunchSplashView: View {
                 Text("R")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
+                    .scaleEffect(logoLift ? 1 : 0.92)
 
                 Text("+")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
                     .opacity(hideInitialPlus ? 0 : 1)
                     .frame(width: hideInitialPlus ? 0 : nil, alignment: .leading)
+                    .scaleEffect(logoLift ? 1 : 0.92)
 
                 Text("equisi")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
                     .opacity(revealWord ? 1 : 0)
-                    .offset(x: revealWord ? 0 : -10)
+                    .offset(x: revealWord ? 0 : -14)
+                    .blur(radius: revealWord ? 0 : 4)
 
                 Text("+")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
                     .opacity(revealPlusAtEnd ? 1 : 0)
-                    .offset(x: revealPlusAtEnd ? 0 : -10)
+                    .offset(x: revealPlusAtEnd ? 0 : -8)
+                    .scaleEffect(revealPlusAtEnd ? 1 : 0.9)
             }
             .shadow(color: AppTheme.deepBlue.opacity(0.28), radius: 18, y: 10)
+            .offset(y: logoLift ? 0 : 6)
         }
         .task {
+            withAnimation(.easeOut(duration: 0.32)) {
+                logoLift = true
+            }
+
             try? await Task.sleep(for: .milliseconds(180))
 
-            withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+            withAnimation(.spring(response: 0.46, dampingFraction: 0.84)) {
                 hideInitialPlus = true
                 revealWord = true
             }
 
-            try? await Task.sleep(for: .milliseconds(360))
+            try? await Task.sleep(for: .milliseconds(380))
 
-            withAnimation(.easeOut(duration: 0.25)) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.88)) {
                 revealPlusAtEnd = true
             }
         }
@@ -345,6 +355,7 @@ struct AppHeroHeader: View {
     let brandText: String
     let unreadNotificationCount: Int
     let onNotificationsTap: () -> Void
+    var showsNotificationButton: Bool = true
 
     var body: some View {
         HStack {
@@ -360,7 +371,9 @@ struct AppHeroHeader: View {
 
             Spacer()
 
-            headerIconButton(systemImage: "bell.badge.fill", badge: unreadNotificationCount, action: onNotificationsTap)
+            if showsNotificationButton {
+                headerIconButton(systemImage: "bell.badge.fill", badge: unreadNotificationCount, action: onNotificationsTap)
+            }
         }
         .padding(.horizontal, 18)
         .padding(.top, 14)

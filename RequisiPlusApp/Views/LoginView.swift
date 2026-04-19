@@ -19,7 +19,8 @@ struct LoginView: View {
                         title: "Acessar conta",
                         brandText: systemName.lowercased(),
                         unreadNotificationCount: 0,
-                        onNotificationsTap: {}
+                        onNotificationsTap: {},
+                        showsNotificationButton: false
                     )
 
                     Spacer(minLength: 28)
