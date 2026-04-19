@@ -135,12 +135,12 @@ final class AppDataViewModel: ObservableObject {
     }
 
     var userFacingUnreadNotificationCount: Int {
-        userFacingNotifications.filter { $0.isRead == false }.count
+        userFacingNotifications.filter { $0.isSystemNotification == false && $0.isRead == false }.count
     }
 
     var userFacingNotificationSyncKey: String {
         userFacingNotifications
-            .map { "\($0.id):\($0.isRead ? "1" : "0")" }
+            .map { "\($0.id):\($0.isSystemNotification ? "system" : ($0.isRead ? "1" : "0"))" }
             .joined(separator: "|")
     }
 
