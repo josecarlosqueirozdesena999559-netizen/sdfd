@@ -22,7 +22,7 @@ struct RequisitionsView: View {
             )
 
             if filteredRequisitions.isEmpty {
-                Text("Nenhuma requisiÃ§Ã£o encontrada.")
+                Text("Nenhuma requisição encontrada.")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textMuted)
             } else {
@@ -144,7 +144,7 @@ enum RequestFilter: String, CaseIterable, Identifiable {
         case .signed:
             return "Assinadas"
         case .done:
-            return "ConcluÃ­das"
+            return "Concluídas"
         }
     }
 
@@ -202,7 +202,7 @@ struct StatusBadge: View {
 
     private var statusLabel: String {
         if normalized.contains("conclu") || normalized.contains("finaliz") || normalized.contains("entreg") {
-            return "ConcluÃ­da"
+            return "Concluída"
         }
 
         if normalized.contains("andamento") || normalized.contains("conferencia") || normalized.contains("separ") {
@@ -217,7 +217,7 @@ struct StatusBadge: View {
     }
 
     private var tint: Color {
-        if statusLabel == "ConcluÃ­da" {
+        if statusLabel == "Concluída" {
             return AppTheme.success
         }
 

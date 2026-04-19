@@ -40,6 +40,7 @@ struct MessagingView: View {
                 }
             }
             .background(AppTheme.background.ignoresSafeArea())
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .fileImporter(
             isPresented: $showingFileImporter,
@@ -74,7 +75,9 @@ struct MessagingView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
             guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-            keyboardInset = max(0, frame.height - 12)
+            let screenHeight = UIScreen.main.bounds.height
+            let overlap = max(0, screenHeight - frame.minY)
+            keyboardInset = max(0, overlap - 12)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             keyboardInset = 0
@@ -116,7 +119,7 @@ struct MessagingView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 13, weight: .bold))
-                        Text("Inicio")
+                        Text("Início")
                             .font(.system(size: 15, weight: .bold))
                     }
                     .foregroundStyle(AppTheme.deepBlue)
@@ -378,13 +381,14 @@ struct MessagingView: View {
         }
         .padding(.horizontal, 12)
         .padding(.top, 10)
-        .padding(.bottom, max(12, keyboardInset))
+        .padding(.bottom, keyboardInset > 0 ? max(8, keyboardInset) : 12)
         .background(AppTheme.surface)
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(AppTheme.fieldBorder.opacity(0.8))
                 .frame(height: 1)
         }
+        .animation(.easeOut(duration: 0.22), value: keyboardInset)
     }
 
     private var recordingComposerContent: some View {
@@ -527,7 +531,7 @@ struct MessagingView: View {
     @ViewBuilder
     private func attachmentView(for attachment: ChatAttachment, isMine: Bool) -> some View {
         if attachment.isAudio {
-            ChatAudioClipPlayer(source: .remote(URL(string: attachment.fileURL)), title: "Audio", accentColor: isMine ? .white : AppTheme.primaryBlue, foregroundColor: isMine ? .white : AppTheme.textPrimary, backgroundColor: isMine ? Color.white.opacity(0.16) : AppTheme.skyBlue.opacity(0.65))
+            ChatAudioClipPlayer(source: .remote(URL(string: attachment.fileURL)), title: "Áudio", accentColor: isMine ? .white : AppTheme.primaryBlue, foregroundColor: isMine ? .white : AppTheme.textPrimary, backgroundColor: isMine ? Color.white.opacity(0.16) : AppTheme.skyBlue.opacity(0.65))
         } else if let attachmentURL = URL(string: attachment.fileURL) {
             Link(destination: attachmentURL) {
                 HStack(spacing: 10) {
@@ -631,7 +635,7 @@ struct MessagingView: View {
     private func conversationStatusText(for thread: ChatThread) -> String {
         if recorder.isRecording { return "Gravando áudio..." }
         if appDataViewModel.activeTypingIndicator?.threadId == thread.id { return "Digitando..." }
-        if let lastSeenDate = latestSeenDate { return "Visto por ultimo \(lastSeenDescription(for: lastSeenDate))" }
+        if let lastSeenDate = latestSeenDate { return "Visto por último \(lastSeenDescription(for: lastSeenDate))" }
         return thread.counterpartRole
     }
 
