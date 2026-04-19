@@ -10,32 +10,52 @@ struct LoginView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let contentWidth = min(geometry.size.width - 32, 520)
+            let contentWidth = min(geometry.size.width - 32, 480)
 
             ZStack {
-                LinearGradient(
-                    colors: [
-                        AppTheme.background,
-                        Color.white,
-                        AppTheme.skyBlue.opacity(0.35)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                AppTheme.heroGradient
                     .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    header(safeTop: geometry.safeAreaInsets.top)
+                Circle()
+                    .fill(Color.white.opacity(0.10))
+                    .frame(width: 300, height: 300)
+                    .offset(x: -geometry.size.width * 0.30, y: -geometry.size.height * 0.20)
 
-                    Spacer(minLength: 24)
+                Circle()
+                    .fill(AppTheme.skyBlue.opacity(0.16))
+                    .frame(width: 360, height: 360)
+                    .offset(x: geometry.size.width * 0.28, y: geometry.size.height * 0.32)
+
+                VStack(spacing: 0) {
+                    Spacer(minLength: max(24, geometry.safeAreaInsets.top + 8))
+
+                    VStack(spacing: 18) {
+                        Text(systemName)
+                            .font(.system(size: 34, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.center)
+
+                        Text("Sistema de Requisicoes")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.white.opacity(0.84))
+                            .multilineTextAlignment(.center)
+
+                        Text("Entre com suas credenciais para acessar a plataforma.")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.78))
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: 280)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 30)
 
                     VStack(spacing: 24) {
                         VStack(spacing: 8) {
                             Text("Entrar")
-                                .font(.system(size: 32, weight: .bold))
-                                .foregroundStyle(AppTheme.textPrimary)
+                                .font(.system(size: 30, weight: .bold))
+                                .foregroundStyle(AppTheme.deepBlue)
 
-                            Text("Acesse a plataforma com suas credenciais para continuar.")
+                            Text("Use seu e-mail institucional e sua senha.")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(AppTheme.textMuted)
                                 .multilineTextAlignment(.center)
@@ -84,7 +104,7 @@ struct LoginView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
                             .background(AppTheme.primaryBlue, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(color: AppTheme.primaryBlue.opacity(0.22), radius: 16, y: 8)
+                            .shadow(color: AppTheme.primaryBlue.opacity(0.24), radius: 18, y: 10)
                         }
                         .buttonStyle(.plain)
                         .disabled(authViewModel.isLoading || email.isEmpty || password.isEmpty)
@@ -93,12 +113,12 @@ struct LoginView: View {
                     .padding(.horizontal, 24)
                     .padding(.vertical, 28)
                     .frame(maxWidth: contentWidth)
-                    .background(Color.white.opacity(0.96), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .background(Color.white.opacity(0.94), in: RoundedRectangle(cornerRadius: 30, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .stroke(AppTheme.fieldBorder.opacity(0.9), lineWidth: 1.2)
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .stroke(Color.white.opacity(0.16), lineWidth: 1.2)
                     )
-                    .shadow(color: AppTheme.deepBlue.opacity(0.10), radius: 26, y: 14)
+                    .shadow(color: AppTheme.deepBlue.opacity(0.22), radius: 30, y: 16)
                     .padding(.horizontal, 16)
 
                     Spacer(minLength: max(24, geometry.safeAreaInsets.bottom + 16))
@@ -108,36 +128,6 @@ struct LoginView: View {
             .onTapGesture {
                 focusedField = nil
             }
-        }
-    }
-
-    private func header(safeTop: CGFloat) -> some View {
-        VStack(spacing: 10) {
-            Text(systemName)
-                .font(.system(size: 28, weight: .heavy))
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
-
-            Text("Sistema de Requisições")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.82))
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 24)
-        .padding(.top, max(20, safeTop + 8))
-        .padding(.bottom, 34)
-        .background(
-            RoundedRectangle(cornerRadius: 0, style: .continuous)
-                .fill(AppTheme.heroGradient)
-                .ignoresSafeArea(edges: .top)
-        )
-        .overlay(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white.opacity(0.12))
-                .frame(height: 18)
-                .blur(radius: 12)
-                .offset(y: 9)
         }
     }
 

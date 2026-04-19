@@ -103,15 +103,24 @@ final class AppDataViewModel: ObservableObject {
         do {
             let profile = try await databaseService.fetchUserProfile(session: userSession)
             async let requisitionsTask = databaseService.fetchRequisitions(session: userSession, profile: profile)
-            async let catalogItemsTask = databaseService.fetchCatalogItems(session: userSession, categories: profile.categoriasPermitidas)
-            async let notificationsTask = databaseService.fetchNotifications(session: userSession, profile: profile)
-            async let adminContactsTask = databaseService.fetchAdminContacts(session: userSession)
-            async let chatThreadsTask = databaseService.fetchChatThreads(session: userSession, profile: profile)
+            async let catalogItemsTask = loadOptionalArray {
+                try await databaseService.fetchCatalogItems(session: userSession, categories: profile.categoriasPermitidas)
+            }
+            async let notificationsTask = loadOptionalArray {
+                try await databaseService.fetchNotifications(session: userSession, profile: profile)
+            }
+            async let adminContactsTask = loadOptionalArray {
+                try await databaseService.fetchAdminContacts(session: userSession)
+            }
+            async let chatThreadsTask = loadOptionalArray {
+                try await databaseService.fetchChatThreads(session: userSession, profile: profile)
+            }
+
             let requisitions = try await requisitionsTask
-            let catalogItems = try await catalogItemsTask
-            let notifications = try await notificationsTask
-            let adminContacts = try await adminContactsTask
-            let chatThreads = try await chatThreadsTask
+            let catalogItems = await catalogItemsTask
+            let notifications = await notificationsTask
+            let adminContacts = await adminContactsTask
+            let chatThreads = await chatThreadsTask
 
             self.profile = profile
             self.requisitions = requisitions
@@ -443,20 +452,26 @@ final class AppDataViewModel: ObservableObject {
     private func refreshSupplementaryData() async {
         guard let profile else { return }
 
-        async let notificationsTask = databaseService.fetchNotifications(session: userSession, profile: profile)
-        async let threadsTask = databaseService.fetchChatThreads(session: userSession, profile: profile)
-        async let contactsTask = databaseService.fetchAdminContacts(session: userSession)
-
-        if let notifications = try? await notificationsTask {
-            self.notifications = notifications
+        async let notificationsTask = loadOptionalArray {
+            try await databaseService.fetchNotifications(session: userSession, profile: profile)
+        }
+        async let threadsTask = loadOptionalArray {
+            try await databaseService.fetchChatThreads(session: userSession, profile: profile)
+        }
+        async let contactsTask = loadOptionalArray {
+            try await databaseService.fetchAdminContacts(session: userSession)
         }
 
-        if let chatThreads = try? await threadsTask {
-            self.chatThreads = chatThreads
-        }
+        self.notifications = await notificationsTask
+        self.chatThreads = await threadsTask
+        self.adminContacts = await contactsTask
+    }
 
-        if let contacts = try? await contactsTask {
-            self.adminContacts = contacts
+    private func loadOptionalArray<Element>(_ operation: () async throws -> [Element]) async -> [Element] {
+        do {
+            return try await operation()
+        } catch {
+            return []
         }
     }
 

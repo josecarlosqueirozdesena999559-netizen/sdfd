@@ -479,7 +479,7 @@ struct SupabaseDatabaseService {
         do {
             return try await perform(path: path, method: method, accessToken: accessToken)
         } catch let error as SupabaseDatabaseError {
-            if case .requestFailed(let message) = error, isMissingRelationMessage(message), let empty = emptyValue(for: Response.self) {
+            if case .requestFailed(let message) = error, isRecoverableSchemaMessage(message), let empty = emptyValue(for: Response.self) {
                 return empty
             }
             throw error
@@ -519,7 +519,7 @@ struct SupabaseDatabaseService {
                 preferRepresentation: preferRepresentation
             )
         } catch let error as SupabaseDatabaseError {
-            if case .requestFailed(let message) = error, isMissingRelationMessage(message), let empty = emptyValue(for: Response.self) {
+            if case .requestFailed(let message) = error, isRecoverableSchemaMessage(message), let empty = emptyValue(for: Response.self) {
                 return empty
             }
             throw error
@@ -641,11 +641,14 @@ struct SupabaseDatabaseService {
         return nil
     }
 
-    private func isMissingRelationMessage(_ message: String) -> Bool {
+    private func isRecoverableSchemaMessage(_ message: String) -> Bool {
         let normalized = message.lowercased()
         return normalized.contains("relation")
             || normalized.contains("does not exist")
             || normalized.contains("could not find")
+            || normalized.contains("column")
+            || normalized.contains("schema cache")
+            || normalized.contains("no rows found")
             || normalized.contains("404")
     }
 }
