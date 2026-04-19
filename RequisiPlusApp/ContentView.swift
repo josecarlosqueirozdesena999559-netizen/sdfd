@@ -27,16 +27,31 @@ enum AppSection: String, CaseIterable, Identifiable {
 struct ContentView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var pushNotificationManager: PushNotificationManager
+    @State private var showSplash = true
 
     var body: some View {
-        Group {
-            if authViewModel.isRestoringSession {
-                SessionLoadingView()
-            } else if let session = authViewModel.session {
-                DashboardView(session: session)
-                    .environmentObject(pushNotificationManager)
-            } else {
-                LoginView()
+        ZStack {
+            Group {
+                if authViewModel.isRestoringSession {
+                    SessionLoadingView()
+                } else if let session = authViewModel.session {
+                    DashboardView(session: session)
+                        .environmentObject(pushNotificationManager)
+                } else {
+                    LoginView()
+                }
+            }
+
+            if showSplash {
+                LaunchSplashView()
+                    .transition(.opacity)
+            }
+        }
+        .task {
+            guard showSplash else { return }
+            try? await Task.sleep(for: .milliseconds(1850))
+            withAnimation(.easeOut(duration: 0.35)) {
+                showSplash = false
             }
         }
     }
@@ -257,6 +272,57 @@ private struct SessionLoadingView: View {
                 Text("Validando sua sessão...")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppTheme.deepBlue)
+            }
+        }
+    }
+}
+
+private struct LaunchSplashView: View {
+    @State private var revealWord = false
+    @State private var revealPlusAtEnd = false
+
+    var body: some View {
+        ZStack {
+            AppTheme.heroGradient
+                .ignoresSafeArea()
+
+            Circle()
+                .fill(Color.white.opacity(0.08))
+                .frame(width: 280, height: 280)
+                .offset(x: 120, y: -180)
+
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                Text("R")
+                    .font(.system(size: 42, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+
+                Text("+")
+                    .font(.system(size: 42, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .offset(x: revealWord ? -2 : 0)
+
+                Text("equisi")
+                    .font(.system(size: 42, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .opacity(revealWord ? 1 : 0)
+                    .offset(x: revealWord ? 0 : -18)
+
+                Text("+")
+                    .font(.system(size: 42, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .opacity(revealPlusAtEnd ? 1 : 0)
+                    .offset(x: revealPlusAtEnd ? 0 : -10)
+            }
+        }
+        .task {
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                revealWord = true
+            }
+
+            try? await Task.sleep(for: .milliseconds(420))
+
+            withAnimation(.easeOut(duration: 0.25)) {
+                revealPlusAtEnd = true
             }
         }
     }
