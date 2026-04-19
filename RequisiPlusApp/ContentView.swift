@@ -178,15 +178,6 @@ private struct DashboardView: View {
             )
             .presentationDetents([.medium, .large])
         }
-        .onChange(of: showingNotifications) { _, isShowing in
-            guard isShowing else {
-                return
-            }
-
-            Task {
-                await appDataViewModel.markVisibleNotificationsAsRead()
-            }
-        }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else {
                 return

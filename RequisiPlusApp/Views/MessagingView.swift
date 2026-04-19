@@ -1053,11 +1053,13 @@ final class ChatAudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelega
     private func startMetering() {
         stopMetering()
         meterTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-            guard let self, let audioRecorder = self.audioRecorder else { return }
-            audioRecorder.updateMeters()
-            self.recordingDuration = audioRecorder.currentTime
-            self.waveformLevels.removeFirst()
-            self.waveformLevels.append(self.normalizePower(audioRecorder.averagePower(forChannel: 0)))
+            Task { @MainActor [weak self] in
+                guard let self, let audioRecorder = self.audioRecorder else { return }
+                audioRecorder.updateMeters()
+                self.recordingDuration = audioRecorder.currentTime
+                self.waveformLevels.removeFirst()
+                self.waveformLevels.append(self.normalizePower(audioRecorder.averagePower(forChannel: 0)))
+            }
         }
     }
 
