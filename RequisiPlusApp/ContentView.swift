@@ -162,9 +162,7 @@ private struct DashboardView: View {
                 onOpenNotification: { notification in
                     showingNotifications = false
 
-                    if notification.isSystemNotification == false {
-                        await appDataViewModel.markNotificationAsRead(notification)
-                    }
+                    await appDataViewModel.markVisibleNotificationsAsRead()
 
                     if let threadId = notification.targetThreadId, availableSections.contains(.chat) {
                         selectedSection = .chat
