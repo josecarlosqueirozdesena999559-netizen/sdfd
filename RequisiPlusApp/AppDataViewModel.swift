@@ -630,7 +630,7 @@ final class AppDataViewModel: ObservableObject {
     }
 
     private var hasSignaturePending: Bool {
-        requisitions.contains(\.requiresDesktopSignature)
+        requisitions.contains { $0.requiresDesktopSignature }
     }
 
     private var hasSignatureAvailable: Bool {
