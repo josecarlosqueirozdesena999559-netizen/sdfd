@@ -22,6 +22,7 @@ struct LoginView: View {
                         onNotificationsTap: {},
                         showsNotificationButton: false
                     )
+                    .frame(minHeight: 244, alignment: .bottom)
 
                     Spacer(minLength: 28)
                     formSection
@@ -125,11 +126,21 @@ struct LoginView: View {
 
             Group {
                 if isSecure {
-                    SecureField(prompt, text: text)
+                    SecureField(
+                        "",
+                        text: text,
+                        prompt: Text(prompt)
+                            .foregroundStyle(AppTheme.textMuted)
+                    )
                         .submitLabel(.go)
                         .onSubmit { submit() }
                 } else {
-                    TextField(prompt, text: text)
+                    TextField(
+                        "",
+                        text: text,
+                        prompt: Text(prompt)
+                            .foregroundStyle(AppTheme.textMuted)
+                    )
                         .textInputAutocapitalization(.never)
                         .keyboardType(keyboardType)
                         .submitLabel(.next)
@@ -143,7 +154,7 @@ struct LoginView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 54)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .stroke(focusedField == field ? AppTheme.primaryBlue.opacity(0.9) : AppTheme.fieldBorder, lineWidth: focusedField == field ? 1.4 : 1)

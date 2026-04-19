@@ -78,7 +78,7 @@ private struct DashboardView: View {
                     AppHeroHeader(
                         title: selectedSection.headerTitle,
                         brandText: "requisi+",
-                        unreadNotificationCount: appDataViewModel.unreadNotificationCount,
+                        unreadNotificationCount: appDataViewModel.userFacingUnreadNotificationCount,
                         onNotificationsTap: {
                             showingNotifications = true
                         }
@@ -150,12 +150,12 @@ private struct DashboardView: View {
             selectedSection = section
             pushNotificationManager.pendingSectionRawValue = nil
         }
-        .task(id: appDataViewModel.notificationSyncKey) {
-            await pushNotificationManager.synchronizeVisibleNotifications(appDataViewModel.inboxNotifications)
+        .task(id: appDataViewModel.userFacingNotificationSyncKey) {
+            await pushNotificationManager.synchronizeVisibleNotifications(appDataViewModel.userFacingNotifications)
         }
         .sheet(isPresented: $showingNotifications) {
             NotificationsSheet(
-                notifications: appDataViewModel.inboxNotifications,
+                notifications: appDataViewModel.userFacingNotifications,
                 onOpenNotification: { notification in
                     showingNotifications = false
 
@@ -194,7 +194,7 @@ private struct DashboardView: View {
 
             Task {
                 await appDataViewModel.refreshAfterAppBecomesActive()
-                await pushNotificationManager.synchronizeVisibleNotifications(appDataViewModel.inboxNotifications)
+                await pushNotificationManager.synchronizeVisibleNotifications(appDataViewModel.userFacingNotifications)
             }
         }
         .environmentObject(appDataViewModel)

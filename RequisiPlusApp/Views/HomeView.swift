@@ -39,18 +39,18 @@ struct HomeView: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.82))
 
-                Text(appDataViewModel.dashboardAlert.title)
+                Text(appDataViewModel.userFacingDashboardAlert.title)
                     .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(.white)
 
-                Text(appDataViewModel.dashboardAlert.message)
+                Text(appDataViewModel.userFacingDashboardAlert.message)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.88))
 
                 Button {
-                    selectedSection = appDataViewModel.summary.pendingCount > 0 ? .verRequisicoes : .fazerRequisicao
+                    selectedSection = appDataViewModel.userFacingDashboardAlert.actionTitle == "Fazer requisição" ? .fazerRequisicao : .verRequisicoes
                 } label: {
-                    Text(appDataViewModel.dashboardAlert.actionTitle)
+                    Text(appDataViewModel.userFacingDashboardAlert.actionTitle)
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(AppTheme.deepBlue)
                         .padding(.horizontal, 18)
