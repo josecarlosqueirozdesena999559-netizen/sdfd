@@ -6,6 +6,7 @@ final class AuthViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isRestoringSession = true
     @Published var errorMessage: String?
+    @Published var infoMessage: String?
 
     private let authService: SupabaseAuthService
     private let sessionStore: SecureSessionStore
@@ -50,6 +51,7 @@ final class AuthViewModel: ObservableObject {
     func signIn(email: String, password: String) async {
         isLoading = true
         errorMessage = nil
+        infoMessage = nil
 
         defer {
             isLoading = false
@@ -63,10 +65,35 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    func requestPasswordReset(email: String) async {
+        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard normalizedEmail.isEmpty == false else {
+            errorMessage = "Informe seu e-mail para recuperar a senha."
+            infoMessage = nil
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+        infoMessage = nil
+
+        defer {
+            isLoading = false
+        }
+
+        do {
+            try await authService.requestPasswordReset(email: normalizedEmail)
+            infoMessage = "Enviamos as instruções de recuperação para o seu e-mail."
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func signOut() {
         let accessToken = session?.accessToken
         session = nil
         errorMessage = nil
+        infoMessage = nil
         sessionStore.clear()
 
         if let accessToken {
@@ -109,6 +136,8 @@ final class AuthViewModel: ObservableObject {
 
     private func persist(session: UserSession) {
         self.session = session
+        errorMessage = nil
+        infoMessage = nil
         try? sessionStore.save(session)
     }
 }

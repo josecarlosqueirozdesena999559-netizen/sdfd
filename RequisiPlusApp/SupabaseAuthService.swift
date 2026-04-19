@@ -37,6 +37,17 @@ struct SupabaseAuthService {
         return response.session
     }
 
+    func requestPasswordReset(email: String) async throws {
+        let request = try makeRequest(
+            path: "/auth/v1/recover",
+            method: "POST",
+            accessToken: nil,
+            body: ["email": email]
+        )
+
+        let _: EmptySupabaseResponse = try await perform(request)
+    }
+
     func refreshSession(refreshToken: String) async throws -> UserSession {
         let request = try makeRequest(
             path: "/auth/v1/token?grant_type=refresh_token",
@@ -117,3 +128,5 @@ struct SupabaseAuthService {
         }
     }
 }
+
+private struct EmptySupabaseResponse: Decodable {}

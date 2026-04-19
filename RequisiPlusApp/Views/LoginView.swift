@@ -68,10 +68,33 @@ struct LoginView: View {
                     isSecure: true
                 )
 
+                HStack {
+                    Spacer()
+
+                    Button("Esqueci minha senha") {
+                        focusedField = nil
+                        Task {
+                            await authViewModel.requestPasswordReset(email: email)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppTheme.primaryBlue)
+                    .disabled(authViewModel.isLoading)
+                    .opacity(authViewModel.isLoading ? 0.7 : 1)
+                }
+
                 if let errorMessage = authViewModel.errorMessage, !errorMessage.isEmpty {
                     Text(errorMessage)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.red.opacity(0.9))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                if let infoMessage = authViewModel.infoMessage, !infoMessage.isEmpty {
+                    Text(infoMessage)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(AppTheme.success)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
