@@ -53,6 +53,10 @@ struct LoginView: View {
                         .multilineTextAlignment(.center)
                 }
 
+                if isPasswordResetFlow {
+                    passwordResetStageBadge
+                }
+
                 loginField(
                     icon: "envelope",
                     text: $email,
@@ -94,17 +98,11 @@ struct LoginView: View {
                 helperActions
 
                 if let errorMessage = authViewModel.errorMessage, !errorMessage.isEmpty {
-                    Text(errorMessage)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.red.opacity(0.9))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    feedbackMessage(errorMessage, color: Color.red.opacity(0.9))
                 }
 
                 if let infoMessage = authViewModel.infoMessage, !infoMessage.isEmpty {
-                    Text(infoMessage)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(AppTheme.success)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    feedbackMessage(infoMessage, color: AppTheme.success)
                 }
 
                 Button {
@@ -146,6 +144,16 @@ struct LoginView: View {
         .padding(.top, 10)
     }
 
+    private var passwordResetStageBadge: some View {
+        Text(authViewModel.isPasswordResetReady ? "Etapa 2 de 2: crie sua nova senha" : "Etapa 1 de 2: valide seu acesso")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(AppTheme.primaryBlue)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppTheme.skyBlue.opacity(0.85), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
     private var helperActions: some View {
         HStack {
             if isPasswordResetFlow {
@@ -176,12 +184,19 @@ struct LoginView: View {
         }
     }
 
+    private func feedbackMessage(_ message: String, color: Color) -> some View {
+        Text(message)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(color)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var subtitleText: String {
         if isPasswordResetFlow {
             if authViewModel.isPasswordResetReady {
-                return "Defina sua nova senha para entrar no app."
+                return "Defina sua nova senha e volte a acessar o app com segurança."
             }
-            return "Informe seu e-mail e a senha atual para validar o acesso."
+            return "Informe seu e-mail e sua senha atual para confirmar sua identidade."
         }
 
         return "Use seu e-mail e sua senha para continuar."

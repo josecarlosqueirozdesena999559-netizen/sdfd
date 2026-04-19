@@ -7,7 +7,7 @@ enum SupabaseAuthError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            return "Resposta invalida do Supabase."
+            return "Resposta inválida do Supabase."
         case .requestFailed(let message):
             return message
         }
@@ -35,17 +35,6 @@ struct SupabaseAuthService {
 
         let response: AuthSessionResponse = try await perform(request)
         return response.session
-    }
-
-    func requestPasswordReset(email: String) async throws {
-        let request = try makeRequest(
-            path: "/auth/v1/recover",
-            method: "POST",
-            accessToken: nil,
-            body: ["email": email]
-        )
-
-        let _: EmptySupabaseResponse = try await perform(request)
     }
 
     func updatePassword(accessToken: String, newPassword: String) async throws {
@@ -91,7 +80,7 @@ struct SupabaseAuthService {
 
     private func makeRequest(path: String, method: String, accessToken: String?, body: [String: String]? = nil) throws -> URLRequest {
         guard let url = URL(string: path, relativeTo: SupabaseConfig.url) else {
-            throw SupabaseAuthError.requestFailed("Falha ao montar a URL de autenticacao do Supabase.")
+            throw SupabaseAuthError.requestFailed("Falha ao montar a URL de autenticação do Supabase.")
         }
 
         var request = URLRequest(url: url)
@@ -123,7 +112,7 @@ struct SupabaseAuthService {
 
         guard (200...299).contains(httpResponse.statusCode) else {
             if httpResponse.statusCode == 404 {
-                throw SupabaseAuthError.requestFailed("Endpoint de autenticação não encontrado. Revise a URL do projeto Supabase e se o Auth está habilitado.")
+                throw SupabaseAuthError.requestFailed("Endpoint de autenticação não encontrado. Revise a URL do projeto Supabase e confirme se o Auth está habilitado.")
             }
 
             let message = (try? decoder.decode(AuthErrorResponse.self, from: data).readableMessage)

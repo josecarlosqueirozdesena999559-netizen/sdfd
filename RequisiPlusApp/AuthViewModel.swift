@@ -46,7 +46,7 @@ final class AuthViewModel: ObservableObject {
 
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "pt_BR")
-        formatter.dateFormat = "dd/MM/yyyy 'as' HH:mm"
+        formatter.dateFormat = "dd/MM/yyyy 'às' HH:mm"
         return formatter.string(from: date)
     }
 
@@ -99,7 +99,7 @@ final class AuthViewModel: ObservableObject {
             let freshSession = try await authService.signIn(email: normalizedEmail, password: normalizedCurrentPassword)
             pendingPasswordResetSession = freshSession
             isPasswordResetReady = true
-            infoMessage = "Crie sua nova senha para concluir o acesso."
+            infoMessage = "Agora crie sua nova senha para concluir o acesso."
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -148,7 +148,7 @@ final class AuthViewModel: ObservableObject {
                 newPassword: normalizedPassword
             )
             persist(session: pendingPasswordResetSession)
-            infoMessage = "Senha atualizada com sucesso."
+            infoMessage = "Senha atualizada com sucesso. Você já está conectado."
         } catch {
             errorMessage = error.localizedDescription
         }
