@@ -11,7 +11,7 @@ struct LoginView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                AppTheme.background
+                AppTheme.backgroundGradient
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
