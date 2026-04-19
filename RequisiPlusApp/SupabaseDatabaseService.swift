@@ -318,7 +318,6 @@ struct SupabaseDatabaseService {
         entries: [RequestedItemEntry],
         observation: String
     ) async throws -> Requisition {
-        let systemCode = try await getNextSaidaCodigoForRequisition(session: userSession)
         let itemPayload = entries.enumerated().map { index, entry in
             RequisitionItemPayload(
                 item: entry.item.name,
@@ -339,9 +338,9 @@ struct SupabaseDatabaseService {
             data: DateFormatter.requisitionDate.string(from: Date()),
             items: Self.encodeJSONString(itemPayload),
             status: "aguardando_assinatura_requisicao",
-            saidaCodigo: systemCode,
-            numeroRequisicao: systemCode,
-            numeroSolicitacao: systemCode,
+            saidaCodigo: nil,
+            numeroRequisicao: nil,
+            numeroSolicitacao: nil,
             solicitanteCpf: profile.cpf,
             solicitanteFuncao: profile.funcao,
             devolucaoMotivo: buildObservation(
@@ -409,21 +408,6 @@ struct SupabaseDatabaseService {
             return "[]"
         }
         return json
-    }
-
-    private func getNextSaidaCodigoForRequisition(session userSession: UserSession) async throws -> String {
-        let prefix = DateFormatter.requisitionCodePrefix.string(from: Date())
-        let encodedPrefix = "\(prefix)*".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "\(prefix)*"
-        let path = "/rest/v1/requisicoes?select=saida_codigo&saida_codigo=like.\(encodedPrefix)&order=saida_codigo.desc&limit=1"
-        let records: [RequisicaoCodigoRecord] = try await performOptional(path: path, method: "GET", accessToken: userSession.accessToken)
-
-        guard let latestCode = records.compactMap(\.saidaCodigo).first else {
-            return "\(prefix)001"
-        }
-
-        let sequenceText = String(latestCode.dropFirst(prefix.count))
-        let nextSequence = (Int(sequenceText) ?? 0) + 1
-        return "\(prefix)\(String(format: "%03d", nextSequence))"
     }
 
     private func fetchRequisitionItems(
@@ -962,27 +946,19 @@ private struct RequisicaoRecord: Decodable {
             return realCode
         }
 
-        return "Aguardando código do sistema"
+        return "Em processamento"
     }
 
     var systemCode: String? {
         [
-            saidaCodigo,
             numeroRequisicao?.displayText,
             numeroSolicitacao?.displayText,
             codigo?.displayText,
-            numero?.displayText
+            numero?.displayText,
+            saidaCodigo
         ]
         .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
         .first { $0.isEmpty == false && $0.isUUIDLike == false }
-    }
-}
-
-private struct RequisicaoCodigoRecord: Decodable {
-    let saidaCodigo: String?
-
-    enum CodingKeys: String, CodingKey {
-        case saidaCodigo = "saida_codigo"
     }
 }
 
@@ -1030,12 +1006,6 @@ private extension DateFormatter {
         return formatter
     }()
 
-    static let requisitionCodePrefix: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
-        formatter.dateFormat = "ddMMyy"
-        return formatter
-    }()
 }
 
 private extension JSONValue {

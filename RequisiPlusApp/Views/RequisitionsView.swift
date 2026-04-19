@@ -36,52 +36,75 @@ struct RequisitionsView: View {
     }
 
     private func requisitionRow(_ requisition: Requisition) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .fill(statusColor(for: requisition))
-                    .frame(width: 6, height: 54)
+                    .frame(width: 6, height: 64)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(requisition.code)
-                        .font(.system(size: 16, weight: .bold))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(requisition.codeLabel)
+                        .font(.system(size: 17, weight: .bold))
                         .foregroundStyle(AppTheme.deepBlue)
+                        .lineLimit(2)
 
                     Text(requisition.materialType.capitalized)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(AppTheme.textPrimary)
+                        .lineLimit(2)
+
+                    Text(requisition.requestedBy)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textMuted)
+                        .lineLimit(1)
                 }
 
-                Spacer()
+                Spacer(minLength: 8)
 
                 StatusBadge(status: requisition.statusDisplay)
             }
 
+            metadataLayout(for: requisition)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AppTheme.fieldBorder.opacity(0.7), lineWidth: 1)
+        )
+        .shadow(color: AppTheme.deepBlue.opacity(0.05), radius: 14, y: 8)
+    }
+
+    @ViewBuilder
+    private func metadataLayout(for requisition: Requisition) -> some View {
+        ViewThatFits(in: .horizontal) {
             HStack(spacing: 10) {
                 rowMeta(icon: "calendar", text: requisition.date)
                 rowMeta(icon: "building.2", text: requisition.sector)
                 rowMeta(icon: "shippingbox", text: requisition.materialType.capitalized)
             }
+
+            VStack(alignment: .leading, spacing: 8) {
+                rowMeta(icon: "calendar", text: requisition.date)
+                rowMeta(icon: "building.2", text: requisition.sector)
+                rowMeta(icon: "shippingbox", text: requisition.materialType.capitalized)
+            }
         }
-        .padding(16)
-        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(AppTheme.fieldBorder.opacity(0.8), lineWidth: 1)
-        )
     }
 
     private func rowMeta(icon: String, text: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
             Text(text)
-                .lineLimit(1)
+                .lineLimit(2)
         }
         .font(.system(size: 12, weight: .medium))
         .foregroundStyle(AppTheme.textMuted)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(Color.white.opacity(0.9), in: Capsule())
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func statusColor(for requisition: Requisition) -> Color {
@@ -147,9 +170,13 @@ enum RequestFilter: String, CaseIterable, Identifiable {
             return status.contains("pendente")
                 || status.contains("andamento")
                 || status.contains("conferencia")
+                || status.contains("assin")
                 || status.contains("recebido")
         case .signed:
-            return RequestFilter.done.matches(requisition: requisition)
+            let status = requisition.normalizedStatus
+            return status.contains("assin")
+                || status.contains("separ")
+                || status.contains("conferencia")
         case .done:
             let status = requisition.normalizedStatus
             return status.contains("conclu") || status.contains("finaliz") || status.contains("entreg")

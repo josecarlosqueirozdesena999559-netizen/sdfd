@@ -170,6 +170,10 @@ struct DashboardSummary {
 }
 
 extension Requisition {
+    var codeLabel: String {
+        hasRealCode ? code : "Em processamento"
+    }
+
     var normalizedStatus: String {
         status.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
     }

@@ -95,35 +95,68 @@ struct HomeView: View {
     }
 
     private func requisitionRow(_ requisition: Requisition) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(statusTint(for: requisition))
-                .frame(width: 5, height: 56)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 14) {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(statusTint(for: requisition))
+                    .frame(width: 5, height: 60)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text(requisition.materialType)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(requisition.materialType.capitalized)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .lineLimit(2)
 
-                Text("Código \(requisition.code)")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(AppTheme.primaryBlue)
+                    Text("Número \(requisition.codeLabel)")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(AppTheme.primaryBlue)
+                        .lineLimit(2)
 
-                Text(requisition.date)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(AppTheme.textMuted)
+                    Text(requisition.requestedBy)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textMuted)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 8)
+
+                StatusBadge(status: requisition.statusDisplay)
             }
 
-            Spacer()
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    compactMeta(icon: "calendar", text: requisition.date)
+                    compactMeta(icon: "building.2", text: requisition.sector)
+                }
 
-            StatusBadge(status: requisition.statusDisplay)
+                VStack(alignment: .leading, spacing: 8) {
+                    compactMeta(icon: "calendar", text: requisition.date)
+                    compactMeta(icon: "building.2", text: requisition.sector)
+                }
+            }
         }
         .padding(16)
-        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AppTheme.fieldBorder.opacity(0.75), lineWidth: 1)
         )
+        .shadow(color: AppTheme.deepBlue.opacity(0.04), radius: 12, y: 8)
+    }
+
+    private func compactMeta(icon: String, text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+            Text(text)
+                .lineLimit(2)
+        }
+        .font(.system(size: 12, weight: .medium))
+        .foregroundStyle(AppTheme.textMuted)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppTheme.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var recentRequisitions: [Requisition] {
