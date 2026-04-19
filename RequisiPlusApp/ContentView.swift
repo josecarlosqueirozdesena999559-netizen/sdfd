@@ -75,8 +75,9 @@ private struct DashboardView: View {
 
             VStack(spacing: 0) {
                 if selectedSection != .chat {
-                    MobileHeader(
+                    AppHeroHeader(
                         title: selectedSection.headerTitle,
+                        brandText: "requisi+",
                         unreadNotificationCount: appDataViewModel.unreadNotificationCount,
                         onNotificationsTap: {
                             showingNotifications = true
@@ -287,9 +288,14 @@ private struct LaunchSplashView: View {
                 .ignoresSafeArea()
 
             Circle()
-                .fill(Color.white.opacity(0.08))
-                .frame(width: 280, height: 280)
-                .offset(x: 120, y: -180)
+                .fill(Color.white.opacity(0.07))
+                .frame(width: 320, height: 320)
+                .offset(x: 130, y: -210)
+
+            Circle()
+                .fill(AppTheme.deepBlue.opacity(0.22))
+                .frame(width: 260, height: 260)
+                .offset(x: -150, y: 240)
 
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text("R")
@@ -313,6 +319,7 @@ private struct LaunchSplashView: View {
                     .opacity(revealPlusAtEnd ? 1 : 0)
                     .offset(x: revealPlusAtEnd ? 0 : -10)
             }
+            .shadow(color: AppTheme.deepBlue.opacity(0.28), radius: 18, y: 10)
         }
         .task {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
@@ -328,15 +335,16 @@ private struct LaunchSplashView: View {
     }
 }
 
-private struct MobileHeader: View {
+struct AppHeroHeader: View {
     let title: String
+    let brandText: String
     let unreadNotificationCount: Int
     let onNotificationsTap: () -> Void
 
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("requisi+")
+                Text(brandText)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(Color.white.opacity(0.82))
 
@@ -356,6 +364,12 @@ private struct MobileHeader: View {
             AppTheme.heroGradient
                 .ignoresSafeArea(edges: .top)
         )
+        .overlay(alignment: .topTrailing) {
+            Circle()
+                .fill(Color.white.opacity(0.08))
+                .frame(width: 160, height: 160)
+                .offset(x: 56, y: -72)
+        }
     }
 
     private func headerIconButton(systemImage: String, badge: Int, action: @escaping () -> Void) -> some View {

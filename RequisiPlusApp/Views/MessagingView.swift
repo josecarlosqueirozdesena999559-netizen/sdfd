@@ -318,7 +318,13 @@ struct MessagingView: View {
                     if recorder.isRecording {
                         recordingComposerContent
                     } else {
-                        TextField("Digite uma mensagem", text: $messageText, axis: .vertical)
+                        TextField(
+                            "",
+                            text: $messageText,
+                            prompt: Text("Digite sua mensagem")
+                                .foregroundStyle(AppTheme.textSoft),
+                            axis: .vertical
+                        )
                             .lineLimit(1...5)
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(AppTheme.textPrimary)
