@@ -331,8 +331,7 @@ struct CreateRequisitionView: View {
     }
 
     private func shortTitle(for material: MaterialType) -> String {
-        material.title
-            .formattedCategoryTitle
+        material.title.formattedCategoryTitle
     }
 
     private func categoryBackground() -> some View {

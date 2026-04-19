@@ -18,11 +18,11 @@ struct ProfileView: View {
         .alert("Excluir conta", isPresented: $showingDeleteAccountAlert) {
             Button("Cancelar", role: .cancel) { }
             Button("Confirmar", role: .destructive) {
-                authViewModel.errorMessage = "A exclusao definitiva da conta ainda precisa ser concluida no servico do sistema."
+                authViewModel.errorMessage = "A exclusão definitiva da conta ainda precisa ser concluída no serviço do sistema."
                 authViewModel.signOut()
             }
         } message: {
-            Text("Sua sessao sera encerrada. Se a exclusao definitiva ainda nao estiver habilitada no servidor, finalize esse pedido no sistema administrativo.")
+            Text("Sua sessão será encerrada. Se a exclusão definitiva ainda não estiver habilitada no servidor, finalize esse pedido no sistema administrativo.")
         }
     }
 
@@ -43,7 +43,7 @@ struct ProfileView: View {
                         .font(.system(size: 24, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
 
-                    Text(appDataViewModel.profile?.funcao ?? "Usuario")
+                    Text(appDataViewModel.profile?.funcao ?? "Usuário")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(AppTheme.textMuted)
 
@@ -59,13 +59,13 @@ struct ProfileView: View {
 
     private var detailsCard: some View {
         PrimaryCard {
-            SectionHeader(title: "Informacoes da conta", subtitle: "Dados usados para acompanhar suas requisicoes no app.")
+            SectionHeader(title: "Informações da conta", subtitle: "Dados usados para acompanhar suas requisições no app.")
 
             VStack(spacing: 12) {
                 InfoStrip(icon: "envelope", title: "E-mail", value: appDataViewModel.profile?.email ?? authViewModel.email)
-                InfoStrip(icon: "building.2", title: "Setor", value: appDataViewModel.profile?.setor ?? "Nao informado")
-                InfoStrip(icon: "person.text.rectangle", title: "Perfil", value: appDataViewModel.profile?.role ?? "Usuario")
-                InfoStrip(icon: "clock", title: "Ultimo acesso", value: authViewModel.lastAccessDescription)
+                InfoStrip(icon: "building.2", title: "Setor", value: appDataViewModel.profile?.setor ?? "Não informado")
+                InfoStrip(icon: "person.text.rectangle", title: "Perfil", value: appDataViewModel.profile?.role ?? "Usuário")
+                InfoStrip(icon: "clock", title: "Último acesso", value: authViewModel.lastAccessDescription)
             }
         }
     }
