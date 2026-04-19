@@ -48,6 +48,17 @@ struct SupabaseAuthService {
         let _: EmptySupabaseResponse = try await perform(request)
     }
 
+    func updatePassword(accessToken: String, newPassword: String) async throws {
+        let request = try makeRequest(
+            path: "/auth/v1/user",
+            method: "PUT",
+            accessToken: accessToken,
+            body: ["password": newPassword]
+        )
+
+        let _: EmptySupabaseResponse = try await perform(request)
+    }
+
     func refreshSession(refreshToken: String) async throws -> UserSession {
         let request = try makeRequest(
             path: "/auth/v1/token?grant_type=refresh_token",

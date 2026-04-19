@@ -6,6 +6,9 @@ struct LoginView: View {
 
     @State private var email = ""
     @State private var password = ""
+    @State private var isPasswordResetFlow = false
+    @State private var newPassword = ""
+    @State private var confirmNewPassword = ""
     private let systemName = "Requisi+"
 
     var body: some View {
@@ -40,11 +43,11 @@ struct LoginView: View {
         PrimaryCard {
             VStack(spacing: 18) {
                 VStack(spacing: 8) {
-                    Text("Entrar")
+                    Text(isPasswordResetFlow ? "Atualizar senha" : "Entrar")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(AppTheme.deepBlue)
 
-                    Text("Use seu e-mail e sua senha para continuar.")
+                    Text(subtitleText)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textMuted)
                         .multilineTextAlignment(.center)
@@ -62,27 +65,33 @@ struct LoginView: View {
                 loginField(
                     icon: "lock",
                     text: $password,
-                    prompt: "Senha",
+                    prompt: isPasswordResetFlow ? "Senha atual" : "Senha",
                     keyboardType: .default,
                     field: .password,
                     isSecure: true
                 )
 
-                HStack {
-                    Spacer()
+                if isPasswordResetFlow, authViewModel.isPasswordResetReady {
+                    loginField(
+                        icon: "key",
+                        text: $newPassword,
+                        prompt: "Nova senha",
+                        keyboardType: .default,
+                        field: .newPassword,
+                        isSecure: true
+                    )
 
-                    Button("Esqueci minha senha") {
-                        focusedField = nil
-                        Task {
-                            await authViewModel.requestPasswordReset(email: email)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AppTheme.primaryBlue)
-                    .disabled(authViewModel.isLoading)
-                    .opacity(authViewModel.isLoading ? 0.7 : 1)
+                    loginField(
+                        icon: "checkmark.shield",
+                        text: $confirmNewPassword,
+                        prompt: "Confirmar nova senha",
+                        keyboardType: .default,
+                        field: .confirmNewPassword,
+                        isSecure: true
+                    )
                 }
+
+                helperActions
 
                 if let errorMessage = authViewModel.errorMessage, !errorMessage.isEmpty {
                     Text(errorMessage)
@@ -99,7 +108,11 @@ struct LoginView: View {
                 }
 
                 Button {
-                    submit()
+                    if isPasswordResetFlow {
+                        submitPasswordResetFlow()
+                    } else {
+                        submit()
+                    }
                 } label: {
                     HStack(spacing: 10) {
                         if authViewModel.isLoading {
@@ -107,7 +120,7 @@ struct LoginView: View {
                                 .tint(.white)
                         }
 
-                        Text(authViewModel.isLoading ? "Entrando..." : "Entrar")
+                        Text(primaryButtonTitle)
                             .font(.system(size: 17, weight: .bold))
                     }
                     .foregroundStyle(.white)
@@ -124,13 +137,54 @@ struct LoginView: View {
                     .shadow(color: AppTheme.primaryBlue.opacity(0.22), radius: 14, y: 8)
                 }
                 .buttonStyle(.plain)
-                .disabled(authViewModel.isLoading || email.isEmpty || password.isEmpty)
-                .opacity(authViewModel.isLoading || email.isEmpty || password.isEmpty ? 0.7 : 1)
+                .disabled(isPrimaryButtonDisabled)
+                .opacity(isPrimaryButtonDisabled ? 0.7 : 1)
             }
         }
         .padding(.horizontal, 20)
         .frame(maxWidth: 520)
         .padding(.top, 10)
+    }
+
+    private var helperActions: some View {
+        HStack {
+            if isPasswordResetFlow {
+                Button("Cancelar") {
+                    cancelPasswordResetFlow()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppTheme.textMuted)
+            } else {
+                Spacer()
+
+                Button("Esqueci minha senha") {
+                    focusedField = .email
+                    isPasswordResetFlow = true
+                    authViewModel.cancelPasswordResetFlow()
+                    newPassword = ""
+                    confirmNewPassword = ""
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppTheme.primaryBlue)
+                .disabled(authViewModel.isLoading)
+                .opacity(authViewModel.isLoading ? 0.7 : 1)
+            }
+
+            Spacer()
+        }
+    }
+
+    private var subtitleText: String {
+        if isPasswordResetFlow {
+            if authViewModel.isPasswordResetReady {
+                return "Defina sua nova senha para entrar no app."
+            }
+            return "Informe seu e-mail e a senha atual para validar o acesso."
+        }
+
+        return "Use seu e-mail e sua senha para continuar."
     }
 
     private func loginField(
@@ -155,8 +209,27 @@ struct LoginView: View {
                         prompt: Text(prompt)
                             .foregroundStyle(AppTheme.textMuted)
                     )
-                        .submitLabel(.go)
-                        .onSubmit { submit() }
+                    .submitLabel(field == .confirmNewPassword ? .go : .next)
+                    .onSubmit {
+                        switch field {
+                        case .email:
+                            focusedField = .password
+                        case .password:
+                            if isPasswordResetFlow {
+                                if authViewModel.isPasswordResetReady {
+                                    focusedField = .newPassword
+                                } else {
+                                    submitPasswordResetFlow()
+                                }
+                            } else {
+                                submit()
+                            }
+                        case .newPassword:
+                            focusedField = .confirmNewPassword
+                        case .confirmNewPassword:
+                            submitPasswordResetFlow()
+                        }
+                    }
                 } else {
                     TextField(
                         "",
@@ -164,10 +237,10 @@ struct LoginView: View {
                         prompt: Text(prompt)
                             .foregroundStyle(AppTheme.textMuted)
                     )
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(keyboardType)
-                        .submitLabel(.next)
-                        .onSubmit { focusedField = .password }
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(keyboardType)
+                    .submitLabel(.next)
+                    .onSubmit { focusedField = .password }
                 }
             }
             .autocorrectionDisabled()
@@ -199,9 +272,71 @@ struct LoginView: View {
             )
         }
     }
+
+    private func submitPasswordResetFlow() {
+        guard authViewModel.isLoading == false else {
+            return
+        }
+
+        focusedField = nil
+
+        if authViewModel.isPasswordResetReady {
+            Task {
+                await authViewModel.completePasswordReset(
+                    newPassword: newPassword,
+                    confirmPassword: confirmNewPassword
+                )
+            }
+        } else {
+            Task {
+                await authViewModel.beginPasswordReset(email: email, currentPassword: password)
+            }
+        }
+    }
+
+    private func cancelPasswordResetFlow() {
+        focusedField = nil
+        isPasswordResetFlow = false
+        newPassword = ""
+        confirmNewPassword = ""
+        authViewModel.cancelPasswordResetFlow()
+    }
+
+    private var primaryButtonTitle: String {
+        if authViewModel.isLoading {
+            if isPasswordResetFlow {
+                return authViewModel.isPasswordResetReady ? "Salvando nova senha..." : "Validando acesso..."
+            }
+            return "Entrando..."
+        }
+
+        if isPasswordResetFlow {
+            return authViewModel.isPasswordResetReady ? "Criar nova senha" : "Continuar"
+        }
+
+        return "Entrar"
+    }
+
+    private var isPrimaryButtonDisabled: Bool {
+        if authViewModel.isLoading {
+            return true
+        }
+
+        if isPasswordResetFlow {
+            if authViewModel.isPasswordResetReady {
+                return newPassword.isEmpty || confirmNewPassword.isEmpty
+            }
+
+            return email.isEmpty || password.isEmpty
+        }
+
+        return email.isEmpty || password.isEmpty
+    }
 }
 
 private enum LoginField {
     case email
     case password
+    case newPassword
+    case confirmNewPassword
 }

@@ -7,9 +7,11 @@ final class AuthViewModel: ObservableObject {
     @Published var isRestoringSession = true
     @Published var errorMessage: String?
     @Published var infoMessage: String?
+    @Published private(set) var isPasswordResetReady = false
 
     private let authService: SupabaseAuthService
     private let sessionStore: SecureSessionStore
+    private var pendingPasswordResetSession: UserSession?
 
     init(
         authService: SupabaseAuthService = SupabaseAuthService(),
@@ -52,6 +54,8 @@ final class AuthViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         infoMessage = nil
+        isPasswordResetReady = false
+        pendingPasswordResetSession = nil
 
         defer {
             isLoading = false
@@ -65,10 +69,67 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    func requestPasswordReset(email: String) async {
+    func beginPasswordReset(email: String, currentPassword: String) async {
         let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let normalizedCurrentPassword = currentPassword.trimmingCharacters(in: .whitespacesAndNewlines)
+
         guard normalizedEmail.isEmpty == false else {
-            errorMessage = "Informe seu e-mail para recuperar a senha."
+            errorMessage = "Informe seu e-mail para continuar."
+            infoMessage = nil
+            return
+        }
+
+        guard normalizedCurrentPassword.isEmpty == false else {
+            errorMessage = "Informe sua senha atual para continuar."
+            infoMessage = nil
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+        infoMessage = nil
+        isPasswordResetReady = false
+        pendingPasswordResetSession = nil
+
+        defer {
+            isLoading = false
+        }
+
+        do {
+            let freshSession = try await authService.signIn(email: normalizedEmail, password: normalizedCurrentPassword)
+            pendingPasswordResetSession = freshSession
+            isPasswordResetReady = true
+            infoMessage = "Crie sua nova senha para concluir o acesso."
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func completePasswordReset(newPassword: String, confirmPassword: String) async {
+        let normalizedPassword = newPassword.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedConfirmPassword = confirmPassword.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let pendingPasswordResetSession else {
+            errorMessage = "Confirme seu e-mail e sua senha atual antes de criar a nova senha."
+            infoMessage = nil
+            isPasswordResetReady = false
+            return
+        }
+
+        guard normalizedPassword.isEmpty == false else {
+            errorMessage = "Informe a nova senha."
+            infoMessage = nil
+            return
+        }
+
+        guard normalizedPassword.count >= 6 else {
+            errorMessage = "A nova senha deve ter pelo menos 6 caracteres."
+            infoMessage = nil
+            return
+        }
+
+        guard normalizedPassword == normalizedConfirmPassword else {
+            errorMessage = "A confirmação da senha não confere."
             infoMessage = nil
             return
         }
@@ -82,11 +143,22 @@ final class AuthViewModel: ObservableObject {
         }
 
         do {
-            try await authService.requestPasswordReset(email: normalizedEmail)
-            infoMessage = "Enviamos as instruções de recuperação para o seu e-mail."
+            try await authService.updatePassword(
+                accessToken: pendingPasswordResetSession.accessToken,
+                newPassword: normalizedPassword
+            )
+            persist(session: pendingPasswordResetSession)
+            infoMessage = "Senha atualizada com sucesso."
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    func cancelPasswordResetFlow() {
+        pendingPasswordResetSession = nil
+        isPasswordResetReady = false
+        errorMessage = nil
+        infoMessage = nil
     }
 
     func signOut() {
@@ -94,6 +166,8 @@ final class AuthViewModel: ObservableObject {
         session = nil
         errorMessage = nil
         infoMessage = nil
+        isPasswordResetReady = false
+        pendingPasswordResetSession = nil
         sessionStore.clear()
 
         if let accessToken {
@@ -131,6 +205,8 @@ final class AuthViewModel: ObservableObject {
         } catch {
             sessionStore.clear()
             session = nil
+            pendingPasswordResetSession = nil
+            isPasswordResetReady = false
         }
     }
 
@@ -138,6 +214,8 @@ final class AuthViewModel: ObservableObject {
         self.session = session
         errorMessage = nil
         infoMessage = nil
+        pendingPasswordResetSession = nil
+        isPasswordResetReady = false
         try? sessionStore.save(session)
     }
 }
